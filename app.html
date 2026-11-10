@@ -182,6 +182,34 @@
   .info-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center}
   .info-ic{width:46px;height:46px;flex:none;color:var(--accent)}
   .info-txt{font-size:15px;line-height:1.45}
+  .info-card{max-height:calc(100vh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .xa{margin:2px 0 10px}
+  .xa-st{background:var(--surface-2);border-radius:14px;padding:6px 6px 0}
+  .xa-st svg{display:block;width:100%;max-height:210px;color:var(--accent)}
+  .xsv .fg{fill:none;stroke:currentColor;stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round}
+  .xsv .b2 .fg{opacity:.5}
+  .xsv .hd{fill:currentColor}
+  .xsv .eq{fill:none;stroke:var(--text-2);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .xsv .eqf{fill:var(--text-2)}
+  .xsv .gr{stroke:var(--line);stroke-width:2}
+  .xsv .cb{stroke:var(--text-2);stroke-width:1;stroke-dasharray:2 1.5;opacity:.8}
+  .xsv .xh{fill:none;stroke:#ff9f0a;stroke-width:1.6}
+  .xsv .xhf{fill:#ff9f0a}
+  .xsv .xd{stroke:#ff9f0a;stroke-width:1.3;stroke-dasharray:2.5 2;fill:none}
+  .xa-ph{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-top:8px;min-height:14px}
+  .xa-cue{display:flex;gap:8px;align-items:flex-start;min-height:40px;margin-top:4px;font-weight:600;font-size:15px;line-height:1.35}
+  .xa-cue b,.xa-ol li::marker{color:#ff9f0a}
+  .xa-cue b{flex:none;width:21px;height:21px;border-radius:50%;background:#ff9f0a;color:#000 !important;display:grid;place-items:center;font-size:12px}
+  .xa-bar{height:3px;border-radius:2px;background:var(--line);margin-top:4px;overflow:hidden}
+  .xa-bar i{display:block;height:100%;background:var(--accent);width:0}
+  .xa-ctl{display:flex;gap:6px;margin-top:8px}
+  .xa-ctl button{flex:1;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);font-weight:600;font-size:13px}
+  .xa-ctl button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .xa-ol{margin:4px 0 10px;padding-left:20px;font-size:14px;line-height:1.4;color:var(--text-2)}
+  .xa-ol li{margin:2px 0}
+  .xa-ol li.on{color:var(--text);font-weight:600}
+  .info-h{font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:var(--muted);margin:10px 0 4px}
+
   @keyframes fadein{from{opacity:0}to{opacity:1}}
   .tile.add{justify-content:center;color:var(--muted);border-style:dashed}
   .tile.add .plus{font-size:30px;line-height:1}
@@ -780,7 +808,7 @@ const UI_EN = {
   'Wird bei „Stopp“ automatisch ausgefüllt, du kannst es aber auch selbst eintragen.': 'Filled in automatically when you press “Stop” – or enter it yourself.',
   'Für frühere Tage die Minuten unten eintragen': 'For past days, enter the minutes below',
   'Erstes Mal – trag einfach ein, was du schaffst. Beim nächsten Mal siehst du hier dein Ziel.': 'First time – just log what you manage. Next time you\'ll see your goal here.',
-  "So geht's": 'How to', 'Schließen': 'Close', 'Aus der Übersicht entfernen': 'Remove from list', 'Übung löschen': 'Delete exercise', 'Name / Bild ändern': 'Change name / image',
+  "So geht's": 'How to', 'Knackpunkte': 'Key points', 'Griff & Stand': 'Grip & stance', 'Schließen': 'Close', 'Aus der Übersicht entfernen': 'Remove from list', 'Übung löschen': 'Delete exercise', 'Name / Bild ändern': 'Change name / image',
   'Für diese eigene Übung gibt es noch keine Beschreibung.': 'There\'s no description for this custom exercise yet.',
   '■ Training beenden': '■ Finish workout', 'Training beenden?': 'Finish workout?', 'Heutige Routine': 'Today\'s routine', 'Routine bearbeiten': 'Edit routine', 'Andere Routine': 'Other routine',
   'Aufwärmsatz · zählt nicht für Ziele und Rekorde': 'Warm-up set · doesn\'t count for goals and records', 'Aufwärmsatz – tippen für Arbeitssatz': 'Warm-up set – tap for working set',
@@ -1574,19 +1602,813 @@ function exerciseDialog(existing) {
     } }).then(ok => { const name = (window.__mname || '').trim(); res(ok && name ? { name, icon: pick } : null); });
   });
 }
+
+/* ================= Übungs-Animationen =================
+   Pose = Gelenkwinkel in Grad (0 = rechts, 90 = unten, -90 = oben) + Wurzelpunkt.
+   Glieder: T Rumpf (Hüfte→Schulter), N Hals, Th/Sh Ober-/Unterschenkel, U/F Ober-/Unterarm,
+   …2 = zweites Bein/Arm (optional). r = Wurzelgelenk (p,f,s,w,k,h), at = dessen Position.
+   fv = Frontansicht (Arme/Beine gespiegelt).                                        */
+const XA = (() => {
+  const LEN = { T: 17, N: 6.5, Th: 13, Sh: 12.5, U: 10, F: 9.5, Th2: 13, Sh2: 12.5, U2: 10, F2: 9.5 };
+  const EDGES = [['p','s','T'],['s','h','N'],['p','k','Th'],['k','f','Sh'],['s','e','U'],['e','w','F'],['p','k2','Th2'],['k2','f2','Sh2'],['s','e2','U2'],['e2','w2','F2']];
+  const rad = d => d * Math.PI / 180;
+  function solve(o) {
+    const a = Object.assign({}, o); if (a.N == null) a.N = a.T;
+    const P = { [o.r || 'p']: o.at.slice() }, fv = o.fv;
+    // Frontansicht: Anknüpfpunkte versetzt
+    const off = { e: fv ? 5 : 0, e2: fv ? -5 : 0, k: fv ? 3 : 0, k2: fv ? -3 : 0 };
+    let changed = true;
+    while (changed) { changed = false;
+      for (const [x, y, key] of EDGES) {
+        if (a[key] == null) continue;
+        const L = LEN[key], ang = rad(fv && key.endsWith('2') ? 180 - a[key] : a[key]);
+        const ox = (off[y] || 0), v = [Math.cos(ang) * L, Math.sin(ang) * L];
+        if (P[x] && !P[y]) { P[y] = [P[x][0] + v[0] + ox, P[x][1] + v[1]]; changed = true; }
+        else if (P[y] && !P[x]) { P[x] = [P[y][0] - v[0] - ox, P[y][1] - v[1]]; changed = true; }
+      }
+    }
+    if (a.ds) for (const k of ['s','e','w','e2','w2']) if (P[k]) P[k] = [P[k][0], P[k][1] - a.ds];
+    return P;
+  }
+  const lerpAng = (a, b, u) => a + (b - a) * u;
+  function blend(A, B, u) {
+    const o = Object.assign({}, A);
+    for (const k in A) if (typeof A[k] === 'number' && typeof B[k] === 'number') o[k] = lerpAng(A[k], B[k], u);
+    if (B.at) o.at = [A.at[0] + (B.at[0] - A.at[0]) * u, A.at[1] + (B.at[1] - A.at[1]) * u];
+    return o;
+  }
+  // Ablauf: s Start · 1 Bewegung A→B · u Umkehrpunkt · 2 zurück · z Pause
+  function seg(X) { const c = X.o ? [1.4, 1, 2.8] : [2.8, 1, 1.6]; return [['s', 1.1], ['1', c[0]], ['u', c[1]], ['2', c[2]], ['z', .6]]; }
+  const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+  function at(X, t) {
+    let acc = 0; const S = seg(X);
+    for (const [ph, d] of S) { if (t < acc + d) { const u = (t - acc) / d; const v = ph === '1' ? ease(u) : ph === 'u' ? 1 : ph === '2' ? 1 - ease(u) : 0; return { ph, u, v }; } acc += d; }
+    return { ph: 'z', u: 1, v: 0 };
+  }
+  const total = X => seg(X).reduce((a, s) => a + s[1], 0);
+  const pts = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  function mark(m, P, X) {
+    if (!m) return '';
+    const c = m[0], k = m.slice(1);
+    if (c === '-') { const [a, b] = k.split(''), A = P[a], B = P[b], dx = B[0] - A[0], dy = B[1] - A[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l * 4.5, ny = dx / l * 4.5;
+      const L = s => `<line class="xd" style="stroke-dasharray:none;stroke-width:1.8" x1="${(A[0] + s * nx).toFixed(1)}" y1="${(A[1] + s * ny).toFixed(1)}" x2="${(B[0] + s * nx).toFixed(1)}" y2="${(B[1] + s * ny).toFixed(1)}"/>`; return L(1) + L(-1); }
+    if (c === '=') { const [a, b] = k.split(''); return `<line class="xd" x1="4" x2="60" y1="${P[b][1].toFixed(1)}" y2="${P[b][1].toFixed(1)}"/><circle class="xh" cx="${P[a][0].toFixed(1)}" cy="${P[a][1].toFixed(1)}" r="5"/>`; }
+    if (c === '~') { const A = solve(X.A)[k], B = solve(X.B)[k]; return `<line class="xd" x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}"/><circle class="xh" cx="${P[k][0].toFixed(1)}" cy="${P[k][1].toFixed(1)}" r="5.5"/>`; }
+    if (P[m]) return `<circle class="xh" cx="${P[m][0].toFixed(1)}" cy="${P[m][1].toFixed(1)}" r="5.5"/><circle class="xhf" cx="${P[m][0].toFixed(1)}" cy="${P[m][1].toFixed(1)}" r="1.5"/>`;
+    return '';
+  }
+  function svg(X, v, cue) {
+    const P = solve(blend(X.A, X.B, v)), fv = X.A.fv; P._v = v;
+    let body = '';
+    const limb = (...k) => k.every(n => P[n]) ? `<polyline class="fg" points="${pts(k.map(n => P[n]))}"/>` : '';
+    if (fv) {
+      const sl = [P.s[0] - 5, P.s[1]], sr = [P.s[0] + 5, P.s[1]], pl = [P.p[0] - 3, P.p[1]], pr = [P.p[0] + 3, P.p[1]];
+      body = `<polyline class="fg" points="${pts([sl, sr])}"/><polyline class="fg" points="${pts([pl, pr])}"/>` + limb('p', 's') +
+        (P.k ? `<polyline class="fg" points="${pts([pr, P.k, P.f])}"/>` : '') + (P.k2 ? `<polyline class="fg" points="${pts([pl, P.k2, P.f2])}"/>` : '') +
+        (P.e ? `<polyline class="fg" points="${pts([sr, P.e, P.w])}"/>` : '') + (P.e2 ? `<polyline class="fg" points="${pts([sl, P.e2, P.w2])}"/>` : '');
+    } else {
+      body = `<g class="b2">${limb('p', 'k2', 'f2')}${limb('s', 'e2', 'w2')}</g>` + limb('f', 'k', 'p', 's') + limb('s', 'e', 'w');
+    }
+    const tool = X.t ? X.t(P) : '';
+    return `<svg viewBox="${X.vb || '0 0 64 62'}" class="xsv">${X.eq || ''}${X.back ? tool : ''}${body}<circle class="hd" cx="${P.h[0].toFixed(1)}" cy="${P.h[1].toFixed(1)}" r="4.4"/>${X.back ? '' : tool}${cue ? mark(cue[3], P, X) : ''}</svg>`;
+  }
+  // ---- Geräte-Bausteine ----
+  const f1 = n => (+n).toFixed(1);
+  const G = {
+    gr: (y = 58) => `<line class="gr" x1="3" y1="${y}" x2="61" y2="${y}"/>`,
+    ln: (...p) => `<polyline class="eq" points="${p.map(q => q.map(f1).join(',')).join(' ')}"/>`,
+    bench: (x1, x2, y, legs = 1) => G.ln([x1, y], [x2, y]) + (legs ? G.ln([x1 + 4, y], [x1 + 4, 58]) + G.ln([x2 - 4, y], [x2 - 4, 58]) : ''),
+    plate: (p, r = 6) => `<circle class="eq" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r}"/><circle class="eqf" cx="${f1(p[0])}" cy="${f1(p[1])}" r="1.6"/>`,
+    db: (p, vert) => vert ? `<rect class="eqf" x="${f1(p[0] - 2)}" y="${f1(p[1] - 6)}" width="4" height="12" rx="1.5"/>` : `<rect class="eqf" x="${f1(p[0] - 6)}" y="${f1(p[1] - 2)}" width="12" height="4" rx="1.5"/>`,
+    dbE: p => `<rect class="eqf" x="${f1(p[0] - 3.5)}" y="${f1(p[1] - 3.5)}" width="7" height="7" rx="2"/>`,
+    cable: (a, b) => `<line class="cb" x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}"/>`,
+    hbar: (p, w = 9) => `<line class="eq" style="stroke-width:3.2" x1="${f1(p[0] - w)}" y1="${f1(p[1])}" x2="${f1(p[0] + w)}" y2="${f1(p[1])}"/>`,
+    pad: (x, y, w, h) => `<rect class="eq" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`,
+    post: (x, y1 = 2, y2 = 58) => G.ln([x, y1], [x, y2])
+  };
+  return { solve, blend, at, total, svg, G, seg };
+})();
+
+const EXA = (() => {
+/* ---- Übungsdaten: Brust & Rücken ---- */
+const XG = XA.G;
+const ST = o => Object.assign({ r: 'f', at: [30, 56], Sh: 90, Th: 90, T: -90, U: 90, F: 90 }, o);
+const SEAT = o => Object.assign({ r: 'p', at: [26, 44], T: -90, Th: 0, Sh: 90 }, o);
+const LIE = o => Object.assign({ r: 'p', at: [36, 42], T: 180, N: 180, Th: 15, Sh: 80 }, o);
+const INC = o => Object.assign({ r: 'p', at: [34, 44], T: -140, Th: 10, Sh: 80 }, o);
+const E = {
+  gr: XG.gr(),
+  flat: XG.gr() + XG.bench(8, 46, 46),
+  inc: XG.gr() + XG.ln([37, 46], [15, 27.5]) + XG.ln([30, 46], [44, 46]) + XG.ln([34, 46], [34, 58]),
+  seat: XG.gr() + XG.ln([15, 46], [34, 46]) + XG.ln([24, 46], [24, 58]),
+  seatB: XG.gr() + XG.ln([15, 46], [34, 46]) + XG.ln([24, 46], [24, 58]) + XG.pad(17, 18, 4, 27),
+  tower: x => XG.post(x, 3, 58) + XG.ln([x - 6, 3], [x + 2, 3])
+};
+const T_ = {
+  bar: P => XG.plate(P.w, 6), barS: P => XG.plate(P.w, 4.2), db: P => XG.dbE(P.w) + (P.w2 ? XG.dbE(P.w2) : ''),
+  dbV: P => XG.db(P.w, 1), hd: P => XG.ln([P.w[0], P.w[1] - 3.5], [P.w[0], P.w[1] + 3.5])
+};
+const cab = (x, y, extra) => P => XG.cable([x, y], P.w) + (extra ? extra(P) : XG.dbE(P.w));
+
+const EXA = {
+  benchbb: { eq: E.flat, t: T_.bar,
+    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 60, F: -75 }),
+    c: [['s', 'Schulterblätter zusammen, Brust raus', 'Squeeze shoulder blades, chest up', 's'],
+        ['s', 'Füße fest am Boden, Po bleibt auf der Bank', 'Feet planted, glutes stay on the bench', 'f'],
+        ['1', 'Stange langsam zur unteren Brust senken', 'Lower the bar slowly to the lower chest', '~w'],
+        ['u', 'Ellbogen ca. 45° zum Körper', 'Elbows about 45° from the body', 'e'],
+        ['2', 'Kraftvoll hochdrücken, dabei ausatmen', 'Press up powerfully, breathe out', '~w']],
+    g: ['Griff etwas breiter als schulterbreit – unten stehen die Unterarme senkrecht. Füße hüftbreit fest am Boden.', 'Grip slightly wider than shoulder-width – forearms vertical at the bottom. Feet hip-width, planted.'] },
+  benchdb: { eq: E.flat, t: T_.db,
+    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 55, F: -80 }),
+    c: [['s', 'Hanteln über der Brust, Schulterblätter zusammen', 'Dumbbells over the chest, shoulder blades back', 's'],
+        ['1', 'Langsam seitlich neben die Brust senken', 'Lower slowly beside the chest', '~w'],
+        ['u', 'Ellbogen leicht unter Bankhöhe, nicht tiefer', 'Elbows just below bench level, no lower', 'e'],
+        ['2', 'Im leichten Bogen nach oben zusammendrücken', 'Press up and together in a slight arc', '~w']],
+    g: ['Handflächen zeigen Richtung Füße, Hanteln etwa schulterbreit. Füße hüftbreit am Boden.', 'Palms face your feet, dumbbells about shoulder-width. Feet hip-width on the floor.'] },
+  closebench: { eq: E.flat, t: T_.bar,
+    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 45, F: -95 }),
+    c: [['s', 'Schulterblätter zusammen, Füße fest', 'Shoulder blades back, feet planted', 's'],
+        ['1', 'Stange zur unteren Brust senken', 'Lower the bar to the lower chest', '~w'],
+        ['u', 'Ellbogen eng am Körper lassen', 'Keep elbows close to the body', 'e'],
+        ['2', 'Hochdrücken – die Kraft kommt aus dem Trizeps', 'Press up – drive with the triceps', '~w']],
+    g: ['Griff schulterbreit (nicht enger, das belastet die Handgelenke). Füße hüftbreit.', 'Grip shoulder-width (not narrower – it strains the wrists). Feet hip-width.'] },
+  declinebench: { eq: XG.gr() + XG.ln([12, 47], [46, 41]) + XG.ln([20, 46], [20, 58]) + XG.ln([40, 42], [40, 58]) + XG.plate([56, 42], 2.5), t: T_.bar,
+    A: { r: 'p', at: [38, 38], T: 165, N: 165, Th: -30, Sh: 60, U: -88, F: -90 }, B: { r: 'p', at: [38, 38], T: 165, N: 165, Th: -30, Sh: 60, U: 55, F: -80 },
+    c: [['s', 'Beine fest einhaken, Schulterblätter zusammen', 'Hook your legs, shoulder blades back', 'f'],
+        ['1', 'Stange langsam zur unteren Brust', 'Lower the bar slowly to the lower chest', '~w'],
+        ['u', 'Kurz Spannung halten, nicht abfedern', 'Pause briefly, don\'t bounce', 'e'],
+        ['2', 'Senkrecht nach oben drücken', 'Press straight up', '~w']],
+    g: ['Griff etwas breiter als schulterbreit. Beine unter den Polstern fixiert.', 'Grip slightly wider than shoulder-width. Legs locked under the pads.'] },
+  inclinebb: { eq: E.inc, t: T_.bar,
+    A: INC({ U: -88, F: -90 }), B: INC({ U: 95, F: -60 }),
+    c: [['s', 'Bank auf 30–45°, Schulterblätter zusammen', 'Bench at 30–45°, shoulder blades back', 's'],
+        ['1', 'Stange zur oberen Brust senken', 'Lower the bar to the upper chest', '~w'],
+        ['u', 'Ellbogen etwa 45° vom Körper', 'Elbows about 45° from the body', 'e'],
+        ['2', 'Senkrecht nach oben drücken, nicht nach vorn', 'Press straight up, not forward', '~w']],
+    g: ['Griff etwas breiter als schulterbreit. Füße hüftbreit fest am Boden.', 'Grip slightly wider than shoulder-width. Feet hip-width, planted.'] },
+  inclinedb: { eq: E.inc, t: T_.db,
+    A: INC({ U: -88, F: -90 }), B: INC({ U: 95, F: -65 }),
+    c: [['s', 'Bank auf 30–45°, Hanteln über der Brust', 'Bench at 30–45°, dumbbells over the chest', 'w'],
+        ['1', 'Langsam neben die obere Brust senken', 'Lower slowly beside the upper chest', '~w'],
+        ['u', 'Dehnung in der Brust spüren', 'Feel the stretch in the chest', 's'],
+        ['2', 'Nach oben und leicht zusammen drücken', 'Press up and slightly together', '~w']],
+    g: ['Handflächen Richtung Füße, Hanteln schulterbreit. Füße hüftbreit am Boden.', 'Palms face your feet, dumbbells shoulder-width. Feet hip-width on the floor.'] },
+  chestpress: { eq: E.seatB + E.tower(56), t: T_.hd, o: 1,
+    A: SEAT({ U: 130, F: -15 }), B: SEAT({ U: 8, F: 0 }),
+    c: [['s', 'Griffe auf Brusthöhe, Rücken am Polster', 'Handles at chest height, back on the pad', 'w'],
+        ['1', 'Nach vorn drücken, ausatmen', 'Press forward, breathe out', '~w'],
+        ['u', 'Arme fast gestreckt – nicht durchdrücken', 'Arms almost straight – don\'t lock out', 'e'],
+        ['2', 'Langsam zurück bis zur Dehnung', 'Return slowly to a stretch', '~w']],
+    g: ['Griffe etwa schulterbreit, Sitz so einstellen, dass sie auf Brusthöhe sind. Füße flach am Boden.', 'Handles about shoulder-width, seat set so they are at chest height. Feet flat on the floor.'] },
+  inclinechestpress: { eq: E.seatB + E.tower(56), t: T_.hd, o: 1,
+    A: SEAT({ U: 130, F: -30 }), B: SEAT({ U: -30, F: -32 }),
+    c: [['s', 'Griffe auf Höhe der oberen Brust', 'Handles level with the upper chest', 'w'],
+        ['1', 'Schräg nach oben drücken', 'Press up at an angle', '~w'],
+        ['u', 'Schultern unten lassen', 'Keep the shoulders down', 's'],
+        ['2', 'Langsam zurückführen', 'Return slowly', '~w']],
+    g: ['Griffe schulterbreit. Rücken und Kopf am Polster, Füße flach am Boden.', 'Handles shoulder-width. Back and head on the pad, feet flat on the floor.'] },
+  fly: { eq: E.seatB, t: T_.hd, o: 1,
+    A: SEAT({ U: 178, F: -90 }), B: SEAT({ U: 0, F: -90 }),
+    c: [['s', 'Rücken am Polster, Ellbogen leicht gebeugt', 'Back on the pad, elbows slightly bent', 'e'],
+        ['1', 'Arme im Bogen vor der Brust zusammenführen', 'Bring the arms together in an arc', '~w'],
+        ['u', 'Brust 1 Sekunde fest anspannen', 'Squeeze the chest for 1 second', 's'],
+        ['2', 'Langsam öffnen bis zur leichten Dehnung', 'Open slowly to a light stretch', '~w']],
+    g: ['Griffe bzw. Polster auf Schulterhöhe, Sitz entsprechend einstellen. Füße flach am Boden.', 'Handles or pads at shoulder height – adjust the seat. Feet flat on the floor.'] },
+  cablefly: { eq: XG.gr() + E.tower(8), t: cab(8, 6), o: 1,
+    A: ST({ T: -75, Th2: 115, Sh2: 100, U: 175, F: -170 }), B: ST({ T: -75, Th2: 115, Sh2: 100, U: 25, F: 35 }),
+    c: [['s', 'Schrittstellung, Oberkörper leicht nach vorn', 'Staggered stance, lean forward slightly', 'f'],
+        ['1', 'Griffe im Bogen vor der Brust zusammen', 'Bring the handles together in an arc', '~w'],
+        ['u', 'Ellbogen bleiben leicht gebeugt', 'Elbows stay slightly bent', 'e'],
+        ['2', 'Langsam öffnen, Brust bleibt gespannt', 'Open slowly, keep the chest tight', '~w']],
+    g: ['Seilzüge oben, Schrittstellung etwa schulterbreit. Griffe mit Handflächen nach unten/innen.', 'Pulleys high, staggered stance about shoulder-width. Palms down/inwards.'] },
+  cablelowfly: { eq: XG.gr() + E.tower(8), t: cab(8, 54), o: 1,
+    A: ST({ T: -82, Th2: 110, Sh2: 95, U: 140, F: 150 }), B: ST({ T: -82, Th2: 110, Sh2: 95, U: -25, F: -35 }),
+    c: [['s', 'Seilzüge unten, aufrecht in Schrittstellung', 'Pulleys low, upright staggered stance', 'f'],
+        ['1', 'Im Bogen nach oben vor die Brust', 'Arc up to chest height', '~w'],
+        ['u', 'Oben die obere Brust anspannen', 'Squeeze the upper chest at the top', 's'],
+        ['2', 'Langsam nach unten öffnen', 'Lower slowly', '~w']],
+    g: ['Seilzüge ganz unten, Handflächen zeigen nach vorn/oben. Schrittstellung schulterbreit.', 'Pulleys at the bottom, palms facing forward/up. Staggered stance shoulder-width.'] },
+  dbfly: { eq: E.flat, t: T_.db,
+    A: LIE({ U: -90, F: -85 }), B: LIE({ U: 100, F: 95 }),
+    c: [['s', 'Hanteln über der Brust, Ellbogen leicht gebeugt', 'Dumbbells over the chest, elbows slightly bent', 'e'],
+        ['1', 'Arme weit seitlich öffnen – langsam', 'Open the arms wide to the sides – slowly', '~w'],
+        ['u', 'Nur bis zur Dehnung, nicht tiefer', 'Only to a stretch, no lower', 's'],
+        ['2', 'Im Bogen über der Brust zusammenführen', 'Bring together over the chest in an arc', '~w']],
+    g: ['Handflächen zeigen zueinander. Füße hüftbreit fest am Boden.', 'Palms face each other. Feet hip-width, planted.'] },
+  inclinedbfly: { eq: E.inc, t: T_.db,
+    A: INC({ U: -90, F: -85 }), B: INC({ U: 125, F: 120 }),
+    c: [['s', 'Bank auf ca. 30°, Hanteln über der Brust', 'Bench at about 30°, dumbbells over the chest', 'w'],
+        ['1', 'Langsam seitlich öffnen', 'Open slowly to the sides', '~w'],
+        ['u', 'Ellbogen bleiben leicht gebeugt', 'Elbows stay slightly bent', 'e'],
+        ['2', 'Oben zusammenführen, Brust anspannen', 'Bring together at the top, squeeze', '~w']],
+    g: ['Handflächen zueinander. Füße hüftbreit am Boden.', 'Palms face each other. Feet hip-width on the floor.'] },
+  dips: { eq: XG.gr() + XG.ln([18, 30], [46, 30]) + XG.ln([22, 30], [22, 58]) + XG.ln([42, 30], [42, 58]),
+    A: { r: 'w', at: [32, 30], F: 90, U: 90, T: -80, Th: 100, Sh: 160 }, B: { r: 'w', at: [32, 30], F: 65, U: 180, T: -55, Th: 110, Sh: 170 },
+    c: [['s', 'Arme gestreckt, Oberkörper leicht vorgeneigt', 'Arms straight, torso leaning slightly forward', '-sp'],
+        ['1', 'Langsam absenken', 'Lower slowly', 's'],
+        ['u', 'Bis die Oberarme etwa waagerecht sind', 'Until upper arms are about parallel', 'e'],
+        ['2', 'Kraftvoll hochdrücken', 'Press up powerfully', 's']],
+    g: ['Griffe etwa schulterbreit, Ellbogen zeigen nach hinten. Beine gekreuzt oder angewinkelt.', 'Grips about shoulder-width, elbows point back. Legs crossed or bent.'] },
+  pushup: { eq: XG.gr(),
+    A: { r: 'w', at: [16, 56], F: 90, U: 90, T: -153, N: -165, Th: 27, Sh: 27 }, B: { r: 'w', at: [16, 56], F: 110, U: -20, T: -173, N: -178, Th: 7, Sh: 7 },
+    c: [['s', 'Körper eine gerade Linie, Bauch fest', 'Body in a straight line, abs tight', '-sp'],
+        ['1', 'Brust langsam Richtung Boden', 'Lower the chest slowly to the floor', 's'],
+        ['u', 'Ellbogen ca. 45° vom Körper', 'Elbows about 45° from the body', 'e'],
+        ['2', 'Hochdrücken, Hüfte nicht durchhängen', 'Push up, don\'t let the hips sag', 'p']],
+    g: ['Hände etwas breiter als schulterbreit, unter den Schultern. Füße hüftbreit.', 'Hands slightly wider than shoulder-width, under the shoulders. Feet hip-width.'] },
+  pullover: { eq: XG.gr() + XG.bench(10, 30, 46), t: T_.db,
+    A: { r: 'p', at: [38, 48], T: 175, N: 175, Th: 10, Sh: 95, U: -90, F: -90 }, B: { r: 'p', at: [38, 48], T: 175, N: 175, Th: 10, Sh: 95, U: -195, F: -190 },
+    c: [['s', 'Schultern quer auf der Bank, Hantel über der Brust', 'Shoulders across the bench, dumbbell over the chest', 's'],
+        ['1', 'Arme gestreckt hinter den Kopf senken', 'Lower straight arms behind the head', '~w'],
+        ['u', 'Hüfte bleibt tief, Dehnung spüren', 'Hips stay low, feel the stretch', 'p'],
+        ['2', 'Im Bogen zurück über die Brust', 'Arc back over the chest', '~w']],
+    g: ['Hantel mit beiden Händen an einer Scheibe halten (Rautengriff). Füße schulterbreit.', 'Hold one end of the dumbbell with both hands (diamond grip). Feet shoulder-width.'] },
+
+  latpull: { eq: XG.gr() + XG.ln([12, 46], [28, 46]) + XG.ln([20, 46], [20, 58]) + XG.ln([30, 37.5], [42, 37.5]) + XG.post(52, 2, 58) + XG.ln([28, 2], [52, 2]),
+    t: P => XG.cable([28, 2], P.w) + XG.hbar(P.w, 10), o: 1,
+    A: { r: 'p', at: [22, 44], T: -92, Th: -4, Sh: 90, U: -78, F: -75 }, B: { r: 'p', at: [22, 44], T: -102, Th: -4, Sh: 90, U: 95, F: -55 },
+    c: [['s', 'Oberschenkel fest unter dem Polster', 'Thighs locked under the pad', 'k'],
+        ['1', 'Leicht zurücklehnen, Brust raus', 'Lean back slightly, chest up', '-sp'],
+        ['1', 'Ellbogen nach unten und hinten ziehen', 'Drive the elbows down and back', 'e'],
+        ['u', 'Stange bis zur oberen Brust', 'Bar to the upper chest', '~w'],
+        ['2', 'Langsam zurück, Arme fast strecken', 'Return slowly, arms almost straight', '~w']],
+    g: ['Obergriff etwa 1,5× schulterbreit. Füße flach am Boden, Knie ca. 90°.', 'Overhand grip about 1.5× shoulder-width. Feet flat, knees about 90°.'] },
+  straightarm: { eq: XG.gr() + E.tower(56), t: cab(54, 6, P => XG.hbar(P.w, 5)), o: 1,
+    A: ST({ at: [26, 56], T: -70, Th: 95, Sh: 85, U: -55, F: -55 }), B: ST({ at: [26, 56], T: -70, Th: 95, Sh: 85, U: 95, F: 95 }),
+    c: [['s', 'Leicht vorgebeugt, Arme fast gestreckt', 'Lean forward slightly, arms almost straight', '-sp'],
+        ['1', 'Stange im Bogen zu den Oberschenkeln', 'Arc the bar down to the thighs', '~w'],
+        ['u', 'Latissimus fest anspannen', 'Squeeze the lats', 's'],
+        ['2', 'Langsam zurück nach oben', 'Return slowly', '~w']],
+    g: ['Obergriff schulterbreit an gerader Stange oder Seil. Füße hüftbreit, Knie leicht gebeugt.', 'Overhand grip shoulder-width on a straight bar or rope. Feet hip-width, knees soft.'] },
+  cablerow: { eq: XG.gr() + XG.ln([8, 47], [28, 47]) + XG.ln([18, 47], [18, 58]) + XG.ln([47, 42], [47, 55]) + XG.post(58, 30, 58),
+    t: P => XG.cable([58, 47], P.w) + T_.hd(P), o: 1,
+    A: { r: 'p', at: [20, 45], T: -72, Th: -5, Sh: 18, U: 8, F: 2 }, B: { r: 'p', at: [20, 45], T: -92, Th: -5, Sh: 18, U: 115, F: -8 },
+    c: [['s', 'Aufrecht sitzen, Knie leicht gebeugt', 'Sit tall, knees slightly bent', 'k'],
+        ['1', 'Griff zum Bauchnabel ziehen', 'Pull the handle to the belly button', '~w'],
+        ['u', 'Schulterblätter zusammendrücken', 'Squeeze the shoulder blades', 's'],
+        ['2', 'Langsam nach vorn, Rücken bleibt gerade', 'Return slowly, back stays straight', '-sp']],
+    g: ['Neutraler Griff (Handflächen zueinander) am V-Griff. Füße hüftbreit auf der Fußplatte.', 'Neutral grip (palms facing) on the V-handle. Feet hip-width on the foot plate.'] },
+  machinerow: { eq: E.seat + XG.pad(42, 22, 4, 16) + E.tower(58), t: T_.hd, o: 1,
+    A: SEAT({ U: 2, F: 0 }), B: SEAT({ U: 160, F: 0 }),
+    c: [['s', 'Brust am Polster, Arme gestreckt', 'Chest on the pad, arms straight', 's'],
+        ['1', 'Ellbogen nah am Körper nach hinten', 'Pull the elbows back close to the body', 'e'],
+        ['u', 'Schulterblätter zusammen, kurz halten', 'Squeeze shoulder blades, hold briefly', 's'],
+        ['2', 'Langsam zurück nach vorn', 'Return slowly', '~w']],
+    g: ['Neutraler oder Obergriff etwa schulterbreit. Sitz so, dass die Griffe auf Brusthöhe sind.', 'Neutral or overhand grip about shoulder-width. Seat set so handles are at chest height.'] },
+  facepull: { eq: XG.gr() + E.tower(58), t: P => XG.cable([56, 12], P.w) + XG.dbE(P.w), o: 1,
+    A: ST({ at: [26, 56], T: -90, U: -12, F: -12 }), B: ST({ at: [26, 56], T: -92, U: -35, F: 175 }),
+    c: [['s', 'Seil auf Kopfhöhe, Arme gestreckt', 'Rope at head height, arms straight', 'w'],
+        ['1', 'Zum Gesicht ziehen, Ellbogen hoch', 'Pull to the face, elbows high', 'e'],
+        ['u', 'Hände auseinander, hintere Schulter anspannen', 'Hands apart, squeeze the rear delts', 's'],
+        ['2', 'Langsam zurück', 'Return slowly', '~w']],
+    g: ['Seil mit Daumen nach hinten greifen. Füße hüftbreit, ein Schritt vom Turm weg.', 'Grip the rope with thumbs pointing back. Feet hip-width, a step away from the tower.'] },
+  deadlift: { eq: E.gr, t: P => XG.plate(P.w, 6), o: 1,
+    A: ST({ at: [30, 56], Sh: 100, Th: 20, T: -30, U: 95, F: 92 }), B: ST({ at: [30, 56], U: 92, F: 90 }),
+    c: [['s', 'Stange dicht am Schienbein, Rücken gerade', 'Bar close to the shins, back straight', '-sp'],
+        ['1', 'Mit den Beinen vom Boden drücken', 'Push the floor away with your legs', 'k'],
+        ['1', 'Stange bleibt dicht am Körper', 'Keep the bar close to the body', '~w'],
+        ['u', 'Oben Hüfte strecken, nicht überstrecken', 'Lock out the hips, don\'t lean back', 'p'],
+        ['2', 'Kontrolliert ablegen, Rücken bleibt gerade', 'Lower under control, back stays straight', '-sp']],
+    g: ['Füße hüftbreit, Griff knapp außerhalb der Beine (Ober- oder Wechselgriff).', 'Feet hip-width, grip just outside the legs (overhand or mixed).'] },
+  sumodl: { eq: E.gr, t: P => XG.plate(P.w, 6), o: 1,
+    A: ST({ at: [30, 56], Sh: 95, Th: 30, T: -45, U: 92, F: 90 }), B: ST({ at: [30, 56], U: 92, F: 90 }),
+    c: [['s', 'Breiter Stand, Fußspitzen nach außen', 'Wide stance, toes pointing out', 'f'],
+        ['1', 'Knie nach außen drücken und hochkommen', 'Push the knees out and stand up', 'k'],
+        ['u', 'Oben Hüfte strecken, Gesäß anspannen', 'Lock out the hips, squeeze the glutes', 'p'],
+        ['2', 'Kontrolliert ablegen', 'Lower under control', '~w']],
+    g: ['Füße deutlich breiter als schulterbreit, Zehen 30–45° nach außen. Griff schulterbreit innerhalb der Beine.', 'Feet well wider than shoulder-width, toes out 30–45°. Grip shoulder-width inside the legs.'] },
+  rackpull: { eq: XG.gr() + XG.post(46, 12, 58) + XG.ln([40, 40], [46, 40]), t: P => XG.plate(P.w, 6), o: 1,
+    A: ST({ at: [30, 56], Sh: 95, Th: 60, T: -50, U: 92, F: 90 }), B: ST({ at: [30, 56], U: 92, F: 90 }),
+    c: [['s', 'Stange auf Kniehöhe in der Ablage', 'Bar at knee height on the pins', 'w'],
+        ['1', 'Hüfte nach vorn schieben und aufrichten', 'Drive the hips forward and stand up', 'p'],
+        ['u', 'Schultern zurück, kurz halten', 'Shoulders back, hold briefly', 's'],
+        ['2', 'Kontrolliert zurück, Rücken gerade', 'Lower under control, back straight', '-sp']],
+    g: ['Füße hüftbreit, Obergriff knapp außerhalb der Beine.', 'Feet hip-width, overhand grip just outside the legs.'] },
+  goodmorning: { eq: E.gr, t: P => XG.plate([P.s[0] - 1, P.s[1] - 1], 5),
+    A: ST({ Sh: 95, U: 110, F: -80 }), B: ST({ Sh: 98, Th: 98, T: -12, U: 190, F: 20 }),
+    c: [['s', 'Stange auf dem oberen Rücken, Knie leicht gebeugt', 'Bar on the upper back, knees soft', 'k'],
+        ['1', 'Hüfte nach hinten schieben, Rücken gerade', 'Push the hips back, back straight', '-sp'],
+        ['u', 'Bis Oberkörper fast waagerecht', 'Until the torso is almost horizontal', 'p'],
+        ['2', 'Über die Hüfte aufrichten', 'Stand up by extending the hips', 'p']],
+    g: ['Füße hüftbreit. Stange wie bei der Kniebeuge, Griff etwas breiter als schulterbreit.', 'Feet hip-width. Bar as for squats, grip slightly wider than shoulders.'] },
+  rdl: { eq: E.gr, t: P => XG.plate(P.w, 6),
+    A: ST({ Sh: 95, U: 92, F: 90 }), B: ST({ Sh: 100, Th: 100, T: -18, U: 92, F: 90 }),
+    c: [['s', 'Knie leicht gebeugt, Rücken gerade', 'Knees slightly bent, back straight', 'k'],
+        ['1', 'Hüfte nach hinten, Stange an den Beinen entlang', 'Hips back, bar slides down the legs', '~w'],
+        ['u', 'Bis kurz unter das Knie – Dehnung hinten', 'To just below the knee – hamstring stretch', 'p'],
+        ['2', 'Hüfte nach vorn, Gesäß anspannen', 'Drive the hips forward, squeeze the glutes', 'p']],
+    g: ['Füße hüftbreit, Obergriff etwa schulterbreit.', 'Feet hip-width, overhand grip about shoulder-width.'] },
+  backext: { eq: XG.gr() + XG.pad(24, 41, 10, 4) + XG.ln([29, 45], [14, 58]) + XG.ln([6, 54], [12, 58]),
+    A: { r: 'p', at: [30, 40], Th: 140, Sh: 140, T: -40, U: 125, F: -55 }, B: { r: 'p', at: [30, 40], Th: 140, Sh: 140, T: 80, U: 250, F: 70 },
+    c: [['s', 'Hüfte auf dem Polster, Körper gerade', 'Hips on the pad, body straight', 'p'],
+        ['1', 'Langsam nach unten rollen', 'Lower slowly', '-sp'],
+        ['u', 'Unten kurz die Dehnung halten', 'Hold the stretch briefly', 's'],
+        ['2', 'Hoch bis zur Linie – nicht überstrecken', 'Rise to a straight line – don\'t overextend', '-sp']],
+    g: ['Polster knapp unter dem Hüftknochen, Füße hüftbreit an der Platte. Arme vor der Brust gekreuzt.', 'Pad just below the hip bones, feet hip-width on the plate. Arms crossed on the chest.'] },
+  pullup: { eq: XG.ln([14, 4], [50, 4]) + XG.post(16, 4, 58) + XG.post(48, 4, 58) + XG.gr(), o: 1,
+    A: { r: 'w', at: [32, 4], F: -90, U: -90, T: -90, Th: 40, Sh: 130 }, B: { r: 'w', at: [32, 4], F: -75, U: 100, T: -95, Th: 40, Sh: 130 },
+    c: [['s', 'Hängen, Schultern aktiv nach unten', 'Hang, pull the shoulders down', 's'],
+        ['1', 'Brust zur Stange ziehen', 'Pull the chest to the bar', 's'],
+        ['u', 'Kinn über die Stange', 'Chin over the bar', 'h'],
+        ['2', 'Langsam ganz ablassen', 'Lower slowly all the way', 'e']],
+    g: ['Obergriff etwas breiter als schulterbreit. Beine angewinkelt oder gekreuzt, nicht schwingen.', 'Overhand grip slightly wider than shoulder-width. Legs bent or crossed, no swinging.'] },
+  dbrow: { eq: XG.gr() + XG.bench(44, 62, 47), t: T_.db, o: 1,
+    A: { r: 'f', at: [40, 56], Sh: 95, Th: 80, T: -8, N: -8, U: 90, F: 90, U2: 90, F2: 90 }, B: { r: 'f', at: [40, 56], Sh: 95, Th: 80, T: -8, N: -8, U: 235, F: 95, U2: 90, F2: 90 },
+    c: [['s', 'Knie und Hand auf der Bank, Rücken gerade', 'Knee and hand on the bench, back flat', '-sp'],
+        ['1', 'Hantel zur Hüfte ziehen', 'Pull the dumbbell to the hip', '~w'],
+        ['u', 'Ellbogen nah am Körper, oben halten', 'Elbow close to the body, hold at the top', 'e'],
+        ['2', 'Langsam ganz ablassen', 'Lower slowly all the way', '~w']],
+    g: ['Neutraler Griff (Handfläche zum Körper). Stützhand unter der Schulter, Standbein leicht gebeugt.', 'Neutral grip (palm facing you). Support hand under the shoulder, standing leg soft.'] },
+  tbarrow: { eq: E.gr, t: T_.bar, o: 1,
+    A: ST({ T: -22, Th: 105, Sh: 82, U: 92, F: 90 }), B: ST({ T: -22, Th: 105, Sh: 82, U: 160, F: 30 }),
+    c: [['s', 'Vorgebeugt, Rücken gerade, Knie gebeugt', 'Bent over, back flat, knees bent', '-sp'],
+        ['1', 'Stange zur unteren Brust ziehen', 'Pull the bar to the lower chest', '~w'],
+        ['u', 'Schulterblätter zusammendrücken', 'Squeeze the shoulder blades', 's'],
+        ['2', 'Langsam ablassen, Rücken bleibt stabil', 'Lower slowly, back stays stable', '-sp']],
+    g: ['Enger neutraler Griff (V-Griff) oder schulterbreit. Füße schulterbreit.', 'Close neutral grip (V-handle) or shoulder-width. Feet shoulder-width.'] },
+  shrug: { eq: E.gr, t: T_.db, o: 1,
+    A: ST({ U: 92, F: 90 }), B: ST({ U: 92, F: 90, ds: 4 }),
+    c: [['s', 'Arme hängen locker, aufrecht stehen', 'Arms hang loose, stand tall', 'w'],
+        ['1', 'Schultern gerade nach oben ziehen', 'Lift the shoulders straight up', 's'],
+        ['u', 'Oben 1 Sekunde halten', 'Hold for 1 second at the top', 's'],
+        ['2', 'Langsam senken – nicht kreisen', 'Lower slowly – don\'t roll them', 's']],
+    g: ['Hanteln seitlich, Handflächen zum Körper. Füße hüftbreit.', 'Dumbbells at your sides, palms facing in. Feet hip-width.'] }
+};
+// Varianten
+Object.assign(EXA, {
+  bench: EXA.benchbb,
+  smithbench: Object.assign({}, EXA.benchbb, { eq: E.flat + XG.ln([22, 2], [22, 46]), A: LIE({ U: -80, F: -90 }), B: LIE({ U: 60, F: -100 }),
+    g: ['Griff etwas breiter als schulterbreit, Stange über der Brustmitte. Sicherungen einstellen!', 'Grip slightly wider than shoulder-width, bar over mid-chest. Set the safeties!'] }),
+  incline: EXA.inclinebb,
+  latnarrow: Object.assign({}, EXA.latpull, { t: P => XG.cable([28, 2], P.w) + XG.hbar(P.w, 3),
+    g: ['Enger neutraler Griff (V-Griff). Füße flach am Boden, Oberschenkel unter dem Polster.', 'Close neutral grip (V-handle). Feet flat, thighs under the pad.'] }),
+  latunder: Object.assign({}, EXA.latpull, { t: P => XG.cable([28, 2], P.w) + XG.hbar(P.w, 5),
+    g: ['Untergriff schulterbreit. Ellbogen bleiben nah am Körper.', 'Underhand grip shoulder-width. Elbows stay close to the body.'] }),
+  latone: Object.assign({}, EXA.latpull, { t: P => XG.cable([28, 2], P.w) + XG.dbE(P.w),
+    g: ['Einzelgriff, neutral. Freie Hand am Polster, Seiten wechseln.', 'Single handle, neutral grip. Free hand on the pad, switch sides.'] }),
+  chinup: Object.assign({}, EXA.pullup, { g: ['Untergriff schulterbreit (Handflächen zu dir). Nicht schwingen.', 'Underhand grip shoulder-width (palms facing you). No swinging.'] }),
+  assistpullup: Object.assign({}, EXA.pullup, { g: ['Obergriff etwas breiter als schulterbreit, Knie auf dem Polster. Mehr Gegengewicht = leichter.', 'Overhand grip slightly wider than shoulders, knees on the pad. More counterweight = easier.'] })
+});
+
+/* ---- Übungsdaten: Schultern, Arme, Beine, Bauch ---- */
+const FV = o => Object.assign({ r: 'p', at: [32, 32], fv: 1, T: -90, Th: 90, Sh: 90, Th2: 90, Sh2: 90, U: 95, F: 90, U2: 95, F2: 90 }, o);
+const FVS = o => Object.assign({ r: 'p', at: [32, 40], fv: 1, T: -90, Th: 92, Sh: 90, Th2: 92, Sh2: 90, U: 95, F: 90, U2: 95, F2: 90 }, o);
+const LIEF = o => Object.assign({ r: 'p', at: [34, 55], T: 180, N: 180, Th: -45, Sh: 60, U: 10, F: 0 }, o);
+const curlCue = (de, en) => [['s', 'Ellbogen fest seitlich am Körper', 'Elbows fixed at your sides', 'e'],
+  ['1', de || 'Ohne Schwung nach oben beugen', en || 'Curl up without swinging', '~w'],
+  ['u', 'Bizeps oben 1 Sekunde anspannen', 'Squeeze the biceps for 1 second', 'w'],
+  ['2', 'Langsam ganz ablassen', 'Lower slowly all the way', '~w']];
+const pushCue = [['s', 'Ellbogen fest neben dem Körper', 'Elbows fixed at your sides', 'e'],
+  ['1', 'Nach unten strecken, bis die Arme gerade sind', 'Push down until the arms are straight', '~w'],
+  ['u', 'Trizeps unten fest anspannen', 'Squeeze the triceps at the bottom', 'w'],
+  ['2', 'Langsam zurück, Ellbogen bewegen sich nicht', 'Return slowly, elbows don\'t move', 'e']];
+const SQUAT_C = [['s', 'Füße schulterbreit, ganze Sohle am Boden', 'Feet shoulder-width, whole foot down', 'f'],
+  ['1', 'Hüfte nach hinten, Knie zeigen über die Zehen', 'Hips back, knees track over the toes', 'k'],
+  ['1', 'Rücken gerade, Brust bleibt oben', 'Back straight, chest stays up', '-sp'],
+  ['u', 'Hüfte mindestens auf Kniehöhe', 'Hips at least down to knee height', '=pk'],
+  ['2', 'Aus den Fersen kraftvoll hochdrücken', 'Drive up powerfully through the heels', 'f']];
+
+Object.assign(EXA, {
+  /* ---- Schultern ---- */
+  ohp: { eq: E.gr, t: T_.bar, o: 1, vb: '-6 -12 76 74',
+    A: ST({ U: 70, F: -75 }), B: ST({ U: -88, F: -90 }),
+    c: [['s', 'Stange vor den Schultern, Bauch und Po fest', 'Bar in front of the shoulders, abs and glutes tight', 'w'],
+        ['1', 'Senkrecht nach oben drücken, Kopf kurz zurück', 'Press straight up, move the head back briefly', '~w'],
+        ['u', 'Oben Stange über dem Hinterkopf', 'At the top the bar is over the back of the head', 'w'],
+        ['2', 'Kontrolliert zurück zur Schulter', 'Lower under control to the shoulders', '~w'],
+        ['2', 'Kein Hohlkreuz', 'Don\'t arch the lower back', '-sp']],
+    g: ['Griff knapp breiter als schulterbreit, Unterarme senkrecht. Füße hüftbreit.', 'Grip just wider than shoulder-width, forearms vertical. Feet hip-width.'] },
+  ohpdb: { eq: E.seatB, t: T_.db, o: 1,
+    A: SEAT({ U: 100, F: -88 }), B: SEAT({ U: -88, F: -90 }),
+    c: [['s', 'Rücken am Polster, Hanteln auf Schulterhöhe', 'Back on the pad, dumbbells at shoulder height', 'w'],
+        ['1', 'Nach oben drücken, ausatmen', 'Press up, breathe out', '~w'],
+        ['u', 'Arme fast gestreckt, nicht durchdrücken', 'Arms almost straight, don\'t lock out', 'e'],
+        ['2', 'Langsam bis auf Ohrhöhe ablassen', 'Lower slowly to ear height', '~w']],
+    g: ['Handflächen nach vorn, Hanteln etwas breiter als schulterbreit. Füße fest am Boden.', 'Palms facing forward, dumbbells slightly wider than shoulders. Feet planted.'] },
+  arnold: { eq: E.seatB, t: T_.db, o: 1,
+    A: SEAT({ U: 75, F: -100 }), B: SEAT({ U: -88, F: -90 }),
+    c: [['s', 'Hanteln vor den Schultern, Handflächen zu dir', 'Dumbbells in front of the shoulders, palms facing you', 'w'],
+        ['1', 'Beim Hochdrücken nach außen drehen', 'Rotate outwards while pressing up', '~w'],
+        ['u', 'Oben Handflächen nach vorn', 'Palms facing forward at the top', 'w'],
+        ['2', 'Langsam zurückdrehen und senken', 'Rotate back and lower slowly', '~w']],
+    g: ['Start mit Handflächen zum Gesicht, Hanteln schulterbreit. Aufrecht sitzen.', 'Start with palms facing your face, dumbbells shoulder-width. Sit upright.'] },
+  lateral: { eq: E.gr, t: T_.db, o: 1,
+    A: FV({}), B: FV({ U: -5, F: 5, U2: -5, F2: 5 }),
+    c: [['s', 'Aufrecht, Arme leicht gebeugt', 'Stand tall, arms slightly bent', 'e'],
+        ['1', 'Seitlich bis Schulterhöhe heben', 'Raise to the side up to shoulder height', '~w'],
+        ['u', 'Ellbogen führen, nicht höher als die Schulter', 'Lead with the elbows, no higher than the shoulder', 'e'],
+        ['2', 'Langsam senken, kein Schwung', 'Lower slowly, no swinging', '~w']],
+    g: ['Handflächen nach unten, kleine Finger leicht höher. Füße hüftbreit, Knie locker.', 'Palms down, little fingers slightly higher. Feet hip-width, knees soft.'] },
+  frontraise: { eq: E.gr, t: T_.db, o: 1,
+    A: ST({ U: 85, F: 85 }), B: ST({ U: -5, F: -5 }),
+    c: [['s', 'Aufrecht, Arme fast gestreckt', 'Stand tall, arms almost straight', 'w'],
+        ['1', 'Vor dem Körper bis Schulterhöhe heben', 'Raise in front to shoulder height', '~w'],
+        ['u', 'Oben kurz halten, Rumpf stabil', 'Hold briefly, torso stable', '-sp'],
+        ['2', 'Langsam senken', 'Lower slowly', '~w']],
+    g: ['Handflächen nach unten, Hanteln schulterbreit. Füße hüftbreit.', 'Palms down, dumbbells shoulder-width. Feet hip-width.'] },
+  reversefly: { eq: E.seat + XG.pad(38, 20, 4, 16), t: T_.hd, o: 1,
+    A: SEAT({ U: 2, F: 0 }), B: SEAT({ U: 178, F: 180 }),
+    c: [['s', 'Brust am Polster, Arme gestreckt vor dir', 'Chest on the pad, arms straight in front', 's'],
+        ['1', 'Arme im Bogen weit nach hinten führen', 'Move the arms back in a wide arc', '~w'],
+        ['u', 'Schulterblätter zusammendrücken', 'Squeeze the shoulder blades', 's'],
+        ['2', 'Langsam zurück nach vorn', 'Return slowly', '~w']],
+    g: ['Griffe auf Schulterhöhe, Handflächen zueinander oder nach unten.', 'Handles at shoulder height, palms facing each other or down.'] },
+  reardelt: { eq: E.gr, t: T_.db, o: 1,
+    A: ST({ T: -15, Th: 100, Sh: 85, U: 92, F: 88 }), B: ST({ T: -15, Th: 100, Sh: 85, U: 175, F: 178 }),
+    c: [['s', 'Oberkörper fast waagerecht, Rücken gerade', 'Torso almost horizontal, back straight', '-sp'],
+        ['1', 'Hanteln seitlich nach außen heben', 'Raise the dumbbells out to the sides', '~w'],
+        ['u', 'Schulterblätter zusammen, kurz halten', 'Shoulder blades together, hold briefly', 's'],
+        ['2', 'Langsam senken', 'Lower slowly', '~w']],
+    g: ['Handflächen zueinander, Arme leicht gebeugt. Füße hüftbreit, Knie gebeugt.', 'Palms facing each other, arms slightly bent. Feet hip-width, knees bent.'] },
+  uprightrow: { eq: E.gr, t: T_.barS, o: 1,
+    A: ST({ U: 92, F: 90 }), B: ST({ U: -25, F: 155 }),
+    c: [['s', 'Stange dicht vor dem Körper', 'Bar close in front of the body', 'w'],
+        ['1', 'Ellbogen führen nach oben', 'Lead upwards with the elbows', 'e'],
+        ['u', 'Bis Brusthöhe, nicht höher', 'To chest height, no higher', '~w'],
+        ['2', 'Langsam ablassen', 'Lower slowly', '~w']],
+    g: ['Obergriff etwa schulterbreit (nicht zu eng). Füße hüftbreit.', 'Overhand grip about shoulder-width (not too narrow). Feet hip-width.'] },
+
+  /* ---- Arme ---- */
+  curl: { eq: E.gr, t: T_.db, o: 1, A: ST({ U: 82, F: 86 }), B: ST({ U: 82, F: -80 }), c: curlCue(),
+    g: ['Handflächen nach vorn (Untergriff). Füße hüftbreit, Knie locker.', 'Palms forward (underhand). Feet hip-width, knees soft.'] },
+  hammercurl: { eq: E.gr, t: T_.dbV, o: 1, A: ST({ U: 82, F: 86 }), B: ST({ U: 82, F: -80 }), c: curlCue(),
+    g: ['Neutraler Griff – Daumen zeigen nach oben. Füße hüftbreit.', 'Neutral grip – thumbs pointing up. Feet hip-width.'] },
+  bbcurl: { eq: E.gr, t: T_.barS, o: 1, A: ST({ U: 82, F: 86 }), B: ST({ U: 82, F: -80 }), c: curlCue(),
+    g: ['Untergriff schulterbreit. Füße hüftbreit, Oberkörper ruhig.', 'Underhand grip shoulder-width. Feet hip-width, torso still.'] },
+  cablecurl: { eq: XG.gr() + E.tower(58), t: cab(56, 55, T_.hd), o: 1, A: ST({ at: [28, 56], U: 92, F: 75 }), B: ST({ at: [28, 56], U: 85, F: -80 }), c: curlCue(),
+    g: ['Untergriff schulterbreit an der Stange. Ein kleiner Schritt vom Turm weg.', 'Underhand grip shoulder-width on the bar. One small step away from the tower.'] },
+  preacher: { eq: E.seat + XG.ln([30, 31], [40, 40]), t: T_.barS, o: 1,
+    A: SEAT({ T: -80, U: 45, F: 50 }), B: SEAT({ T: -80, U: 45, F: -95 }),
+    c: [['s', 'Oberarme flach auf dem Polster', 'Upper arms flat on the pad', 'e'],
+        ['1', 'Gewicht nach oben beugen', 'Curl the weight up', '~w'],
+        ['u', 'Oben anspannen, Oberarme bleiben liegen', 'Squeeze at the top, arms stay on the pad', 'e'],
+        ['2', 'Langsam ablassen, nicht ganz durchstrecken', 'Lower slowly, don\'t fully lock out', '~w']],
+    g: ['Untergriff schulterbreit (SZ-Stange: schräger Griff). Achseln am Polsterrand.', 'Underhand grip shoulder-width (EZ bar: angled grip). Armpits at the top of the pad.'] },
+  conccurl: { eq: E.seat, t: T_.db, o: 1,
+    A: SEAT({ T: -50, U: 85, F: 90 }), B: SEAT({ T: -50, U: 85, F: -80 }),
+    c: [['s', 'Ellbogen an der Innenseite des Oberschenkels', 'Elbow against the inner thigh', 'e'],
+        ['1', 'Hantel zur Schulter beugen', 'Curl the dumbbell to the shoulder', '~w'],
+        ['u', 'Oben fest anspannen', 'Squeeze hard at the top', 'w'],
+        ['2', 'Langsam ganz ablassen', 'Lower slowly all the way', '~w']],
+    g: ['Untergriff, sitzend mit breitem Stand. Freie Hand auf dem anderen Knie.', 'Underhand grip, seated with a wide stance. Free hand on the other knee.'] },
+  inclinecurl: { eq: E.inc, t: T_.db, o: 1,
+    A: INC({ U: 100, F: 98 }), B: INC({ U: 100, F: -60 }), c: curlCue('Hochbeugen, Ellbogen bleiben hinten', 'Curl up, elbows stay back'),
+    g: ['Bank auf 45–60°, Arme hängen senkrecht. Handflächen nach vorn.', 'Bench at 45–60°, arms hang straight down. Palms forward.'] },
+  machinecurl: { eq: E.seat + XG.ln([30, 31], [40, 40]), t: T_.hd, o: 1,
+    A: SEAT({ T: -80, U: 45, F: 50 }), B: SEAT({ T: -80, U: 45, F: -95 }), c: curlCue(),
+    g: ['Griffe im Untergriff, Ellbogen auf Höhe der Drehachse.', 'Underhand grip, elbows lined up with the pivot.'] },
+  wristcurl: { eq: E.seat, t: P => XG.dbE([P.w[0] + 3, P.w[1] - 1 - P._v * 4]), o: 1,
+    A: SEAT({ T: -55, U: 100, F: 0 }), B: SEAT({ T: -55, U: 100, F: 0 }),
+    c: [['s', 'Unterarme auf den Oberschenkeln, Handgelenk frei', 'Forearms on the thighs, wrists free', 'w'],
+        ['1', 'Nur das Handgelenk beugen', 'Move only the wrists', 'w'],
+        ['u', 'Oben kurz halten', 'Hold briefly at the top', 'w'],
+        ['2', 'Langsam senken', 'Lower slowly', 'w']],
+    g: ['Untergriff, Hände etwa schulterbreit. Handgelenke über den Knien.', 'Underhand grip, hands about shoulder-width. Wrists over the knees.'] },
+  triceps: { eq: XG.gr() + E.tower(56), t: cab(54, 5, P => XG.hbar(P.w, 4)), o: 1, A: ST({ U: 98, F: -55 }), B: ST({ U: 98, F: 85 }), c: pushCue,
+    g: ['Obergriff schulterbreit an der Stange. Füße hüftbreit, Oberkörper leicht vor.', 'Overhand grip shoulder-width on the bar. Feet hip-width, lean slightly forward.'] },
+  ropepush: { eq: XG.gr() + E.tower(56), t: cab(54, 5, T_.hd), o: 1, A: ST({ U: 98, F: -55 }), B: ST({ U: 98, F: 85 }),
+    c: pushCue.slice(0, 1).concat([['1', 'Nach unten strecken, Seilenden auseinander', 'Push down, pull the rope ends apart', '~w']], pushCue.slice(2)),
+    g: ['Seil mit Daumen nach oben (neutral). Füße hüftbreit.', 'Rope with thumbs up (neutral). Feet hip-width.'] },
+  tricepsone: { eq: XG.gr() + E.tower(56), t: cab(54, 5, T_.hd), o: 1, A: ST({ U: 98, F: -55, U2: 92, F2: 90 }), B: ST({ U: 98, F: 85, U2: 92, F2: 90 }), c: pushCue,
+    g: ['Einzelgriff im Ober- oder Untergriff. Seitlich zum Turm, Füße hüftbreit.', 'Single handle, overhand or underhand. Side-on to the tower, feet hip-width.'] },
+  tricepsmachine: { eq: E.seatB + XG.ln([28, 38], [36, 38]), t: T_.hd, o: 1, A: SEAT({ U: 70, F: -60 }), B: SEAT({ U: 70, F: 70 }), c: pushCue,
+    g: ['Ellbogen auf dem Polster, auf Höhe der Drehachse. Neutraler Griff.', 'Elbows on the pad, lined up with the pivot. Neutral grip.'] },
+  skull: { eq: E.flat, t: T_.barS,
+    A: LIE({ U: -100, F: -100 }), B: LIE({ U: -105, F: 165 }),
+    c: [['s', 'Stange über der Brust, Oberarme senkrecht', 'Bar over the chest, upper arms vertical', 'e'],
+        ['1', 'Nur die Unterarme Richtung Stirn beugen', 'Bend only the forearms towards the forehead', '~w'],
+        ['u', 'Ellbogen zeigen zur Decke', 'Elbows point to the ceiling', 'e'],
+        ['2', 'Mit dem Trizeps zurück strecken', 'Extend back with the triceps', '~w']],
+    g: ['SZ-Stange im schrägen Obergriff, Hände etwa 15–20 cm auseinander. Füße am Boden.', 'EZ bar, angled overhand grip, hands about 15–20 cm apart. Feet on the floor.'] },
+  overheadtri: { eq: E.gr, t: T_.dbV, vb: '-6 -10 76 72',
+    A: ST({ U: -100, F: -95 }), B: ST({ U: -100, F: 100 }),
+    c: [['s', 'Hantel mit beiden Händen über dem Kopf', 'Dumbbell in both hands overhead', 'w'],
+        ['1', 'Hinter den Kopf absenken', 'Lower behind the head', '~w'],
+        ['u', 'Ellbogen zeigen nach vorn, eng am Kopf', 'Elbows point forward, close to the head', 'e'],
+        ['2', 'Nach oben strecken', 'Extend up', '~w']],
+    g: ['Beide Hände unter der oberen Scheibe (Rautengriff). Füße hüftbreit, Bauch fest.', 'Both hands under the top plate (diamond grip). Feet hip-width, abs tight.'] },
+  kickback: { eq: E.gr, t: T_.db, o: 1,
+    A: ST({ T: -15, Th: 100, Sh: 85, U: 170, F: 90 }), B: ST({ T: -15, Th: 100, Sh: 85, U: 170, F: 175 }),
+    c: [['s', 'Vorgebeugt, Oberarm parallel zum Körper', 'Bent over, upper arm parallel to the body', 'e'],
+        ['1', 'Unterarm nach hinten strecken', 'Extend the forearm back', '~w'],
+        ['u', 'Gestreckt kurz halten', 'Hold briefly when straight', 'w'],
+        ['2', 'Langsam zurück, Oberarm bleibt still', 'Return slowly, upper arm stays still', 'e']],
+    g: ['Neutraler Griff (Handfläche zum Körper). Füße hüftbreit oder Knie auf der Bank.', 'Neutral grip (palm facing you). Feet hip-width or knee on a bench.'] },
+  benchdip: { eq: XG.gr() + XG.bench(6, 24, 40),
+    A: { r: 'w', at: [20, 40], F: 90, U: 90, T: -95, Th: 30, Sh: 55 }, B: { r: 'w', at: [20, 40], F: 60, U: -145, T: -95, Th: -5, Sh: 25 },
+    c: [['s', 'Hände hinter dir auf der Bank, Arme gestreckt', 'Hands on the bench behind you, arms straight', 'w'],
+        ['1', 'Langsam absenken, Rücken nah an der Bank', 'Lower slowly, back close to the bench', 's'],
+        ['u', 'Bis die Ellbogen etwa 90° haben', 'Until the elbows reach about 90°', 'e'],
+        ['2', 'Hochdrücken', 'Press up', 's']],
+    g: ['Hände schulterbreit, Finger nach vorn. Beine angewinkelt (leichter) oder gestreckt (schwerer).', 'Hands shoulder-width, fingers forward. Legs bent (easier) or straight (harder).'] },
+
+  /* ---- Beine ---- */
+  squat: { eq: E.gr, t: P => XG.plate(P.w, 5),
+    A: ST({ at: [32, 56], U: 110, F: -80 }), B: ST({ at: [32, 56], Sh: 110, Th: 0, T: -55, U: 145, F: -45 }), c: SQUAT_C,
+    g: ['Füße schulterbreit, Zehen leicht nach außen. Stange auf dem oberen Rücken, Griff etwas breiter als schulterbreit.', 'Feet shoulder-width, toes slightly out. Bar on the upper back, grip slightly wider than shoulders.'] },
+  frontsquat: { eq: E.gr, t: P => XG.plate(P.w, 5),
+    A: ST({ at: [32, 56], U: -10, F: 170 }), B: ST({ at: [32, 56], Sh: 115, Th: 0, T: -70, U: 10, F: 190 }),
+    c: [['s', 'Stange vorn auf den Schultern, Ellbogen hoch', 'Bar on the front of the shoulders, elbows high', 'e'],
+        ['1', 'Tief und aufrecht absenken', 'Squat deep and upright', '-sp'],
+        ['u', 'Ellbogen bleiben oben', 'Elbows stay up', 'e'],
+        ['2', 'Aus den Fersen hochdrücken', 'Drive up through the heels', 'f']],
+    g: ['Füße schulterbreit. Stange liegt auf den vorderen Schultern, Finger locker schulterbreit.', 'Feet shoulder-width. Bar rests on the front delts, fingers loosely shoulder-width.'] },
+  gobletsquat: { eq: E.gr, t: T_.dbV,
+    A: ST({ at: [32, 56], U: 75, F: -95 }), B: ST({ at: [32, 56], Sh: 112, Th: 0, T: -65, U: 105, F: -60 }),
+    c: [['s', 'Hantel senkrecht vor der Brust', 'Dumbbell vertical at the chest', 'w'],
+        ['1', 'Tief zwischen die Knie setzen', 'Sit deep between the knees', 'p'],
+        ['u', 'Oberkörper bleibt aufrecht', 'Torso stays upright', '-sp'],
+        ['2', 'Aus den Fersen hochdrücken', 'Drive up through the heels', 'f']],
+    g: ['Füße schulterbreit oder etwas breiter, Zehen leicht nach außen. Hantel mit beiden Händen an der oberen Scheibe.', 'Feet shoulder-width or a bit wider, toes slightly out. Hold the top end of the dumbbell with both hands.'] },
+  hacksquat: { eq: XG.gr() + XG.ln([30, 57], [52, 52]) + XG.ln([4, 12], [22, 58]), t: P => XG.ln([P.p[0] - 4, P.p[1] + 1], [P.s[0] - 4, P.s[1] - 1]),
+    A: { r: 'f', at: [40, 54], Sh: 80, Th: 98, T: -112, U: 70, F: -80 }, B: { r: 'f', at: [40, 54], Sh: 128, Th: 18, T: -112, U: 70, F: -80 },
+    c: [['s', 'Rücken fest am Polster, Schultern unter den Polstern', 'Back on the pad, shoulders under the pads', '-sp'],
+        ['1', 'Langsam tief absenken', 'Lower slowly and deep', 'p'],
+        ['u', 'Knie zeigen in Richtung Zehen', 'Knees point towards the toes', 'k'],
+        ['2', 'Über die ganze Sohle hochdrücken', 'Press up through the whole foot', 'f']],
+    g: ['Füße schulterbreit mittig auf der Plattform, Zehen leicht nach außen.', 'Feet shoulder-width in the middle of the platform, toes slightly out.'] },
+  legpress: { eq: XG.gr() + XG.ln([6, 30], [18, 48]) + XG.ln([12, 50], [28, 50]) + XG.ln([30, 44], [58, 18]),
+    t: P => XG.ln([P.f[0] - 4, P.f[1] - 5], [P.f[0] + 4, P.f[1] + 5]),
+    A: { r: 'p', at: [20, 46], T: -148, Th: -40, Sh: -40, U: 60, F: 0 }, B: { r: 'p', at: [20, 46], T: -148, Th: -82, Sh: 15, U: 60, F: 0 },
+    c: [['s', 'Rücken und Po fest im Sitz', 'Back and glutes firmly in the seat', 'p'],
+        ['1', 'Langsam beugen bis etwa 90° im Knie', 'Bend slowly to about 90° at the knee', 'k'],
+        ['u', 'Po hebt nicht ab', 'Don\'t let the glutes lift', 'p'],
+        ['2', 'Hochdrücken, Knie nicht durchstrecken', 'Press up, don\'t lock the knees', 'f']],
+    g: ['Füße schulterbreit mittig auf der Platte, Zehen leicht nach außen.', 'Feet shoulder-width in the middle of the plate, toes slightly out.'] },
+  presscalf: { eq: XG.gr() + XG.ln([6, 30], [18, 48]) + XG.ln([12, 50], [28, 50]) + XG.ln([30, 44], [58, 18]),
+    t: P => { const a = (-40 + 90 - P._v * 18) * Math.PI / 180, c = [P.f[0] + 2, P.f[1] - 1]; return XG.ln([c[0] - 6 * Math.cos(a), c[1] - 6 * Math.sin(a)], [c[0] + 6 * Math.cos(a), c[1] + 6 * Math.sin(a)]); }, o: 1,
+    A: { r: 'p', at: [20, 46], T: -148, Th: -40, Sh: -40, U: 60, F: 0 }, B: { r: 'p', at: [20, 46], T: -148, Th: -40, Sh: -40, U: 60, F: 0 },
+    c: [['s', 'Fußballen an der Plattform-Unterkante, Beine gestreckt', 'Balls of the feet on the lower edge, legs straight', 'f'],
+        ['1', 'Nur mit den Füßen wegdrücken', 'Push away with the feet only', 'f'],
+        ['u', 'Wade oben fest anspannen', 'Squeeze the calves at the top', 'f'],
+        ['2', 'Langsam tief in die Dehnung', 'Lower slowly into a deep stretch', 'f']],
+    g: ['Füße hüftbreit, nur die Fußballen auf der Platte. Knie leicht gebeugt, nicht durchgedrückt.', 'Feet hip-width, only the balls of the feet on the plate. Knees soft, not locked.'] },
+  legext: { eq: E.seatB, t: P => XG.plate(P.f, 2.6), o: 1,
+    A: SEAT({ Sh: 95, U: 100, F: 0 }), B: SEAT({ Sh: -2, U: 100, F: 0 }),
+    c: [['s', 'Polster vor den Schienbeinen, Rücken angelehnt', 'Pad in front of the shins, back on the pad', 'f'],
+        ['1', 'Beine strecken', 'Straighten the legs', '~f'],
+        ['u', 'Oben 1 Sekunde halten', 'Hold for 1 second at the top', 'k'],
+        ['2', 'Langsam senken', 'Lower slowly', '~f']],
+    g: ['Knie auf Höhe der Drehachse, Füße hüftbreit. Mit den Händen an den Seitengriffen festhalten.', 'Knees lined up with the pivot, feet hip-width. Hold the side handles.'] },
+  seatedlegcurl: { eq: E.seatB + XG.ln([30, 41], [42, 41]), t: P => XG.plate(P.f, 2.6), o: 1,
+    A: SEAT({ Sh: 5, U: 100, F: 0 }), B: SEAT({ Sh: 105, U: 100, F: 0 }),
+    c: [['s', 'Polster auf den Oberschenkeln und hinter den Waden', 'Pads on the thighs and behind the calves', 'k'],
+        ['1', 'Unterschenkel nach unten-hinten beugen', 'Curl the lower legs down and back', '~f'],
+        ['u', 'Beinbeuger fest anspannen', 'Squeeze the hamstrings', 'k'],
+        ['2', 'Langsam zurück', 'Return slowly', '~f']],
+    g: ['Knie auf Höhe der Drehachse, Füße hüftbreit.', 'Knees lined up with the pivot, feet hip-width.'] },
+  legcurl: { eq: XG.gr() + XG.bench(10, 48, 44), t: P => XG.plate(P.f, 2.6), o: 1,
+    A: { r: 'p', at: [32, 40], T: 180, N: 180, Th: 0, Sh: 0, U: 90, F: 10 }, B: { r: 'p', at: [32, 40], T: 180, N: 180, Th: 0, Sh: -110, U: 90, F: 10 },
+    c: [['s', 'Bauchlage, Polster über den Fersen', 'Lying face down, pad above the heels', 'f'],
+        ['1', 'Fersen Richtung Po ziehen', 'Curl the heels towards the glutes', '~f'],
+        ['u', 'Hüfte bleibt auf dem Polster', 'Hips stay on the pad', 'p'],
+        ['2', 'Langsam zurück', 'Return slowly', '~f']],
+    g: ['Knie knapp hinter der Polsterkante, Beine hüftbreit. Hände an den Griffen vorn.', 'Knees just past the edge of the pad, legs hip-width. Hands on the front handles.'] },
+  lunge: { eq: E.gr,
+    A: { r: 'f', at: [40, 56], Sh: 92, Th: 75, T: -90, U: 92, F: 90, Th2: 115, Sh2: 125 }, B: { r: 'f', at: [40, 56], Sh: 105, Th: 5, T: -90, U: 92, F: 90, Th2: 102, Sh2: 172 },
+    c: [['s', 'Großer Schritt nach vorn, aufrecht', 'Big step forward, stand tall', 'f'],
+        ['1', 'Hinteres Knie Richtung Boden senken', 'Lower the back knee towards the floor', 'k2'],
+        ['u', 'Vorderes Knie über dem Fuß, nicht davor', 'Front knee over the foot, not past it', 'k'],
+        ['2', 'Über die vordere Ferse hochdrücken', 'Push up through the front heel', 'f']],
+    g: ['Füße hüftbreit hintereinander (wie auf Schienen), nicht auf einer Linie.', 'Feet hip-width apart front to back (like on rails), not in one line.'] },
+  bulgarian: { eq: XG.gr() + XG.bench(2, 18, 42),
+    A: { r: 'f', at: [40, 56], Sh: 92, Th: 80, T: -90, U: 92, F: 90, Th2: 120, Sh2: -165 }, B: { r: 'f', at: [40, 56], Sh: 108, Th: 8, T: -80, U: 92, F: 90, Th2: 95, Sh2: -150 },
+    c: [['s', 'Hinterer Fuß auf der Bank', 'Rear foot on the bench', 'f2'],
+        ['1', 'Gerade nach unten senken', 'Lower straight down', 'p'],
+        ['u', 'Hinteres Knie fast am Boden', 'Back knee almost touching the floor', 'k2'],
+        ['2', 'Über das vordere Bein hochdrücken', 'Drive up through the front leg', 'f']],
+    g: ['Vorderer Fuß etwa ein großer Schritt vor der Bank, hüftbreit versetzt. Fußrist hinten auf der Bank.', 'Front foot about a big step in front of the bench, hip-width offset. Top of the rear foot on the bench.'] },
+  stepup: { eq: XG.gr() + XG.pad(34, 45, 16, 13), o: 1,
+    A: { r: 'f', at: [42, 44.5], Sh: 100, Th: 25, T: -80, U: 92, F: 90, Th2: 100, Sh2: 95 }, B: { r: 'f', at: [42, 44.5], Sh: 90, Th: 90, T: -90, U: 92, F: 90, Th2: 60, Sh2: 120 },
+    c: [['s', 'Ganzer Fuß auf der Box', 'Whole foot on the box', 'f'],
+        ['1', 'Über das vordere Bein hochdrücken', 'Drive up through the front leg', 'k'],
+        ['u', 'Oben aufrecht stehen', 'Stand tall at the top', '-sp'],
+        ['2', 'Kontrolliert wieder absteigen', 'Step down under control', 'f2']],
+    g: ['Box etwa kniehoch, Fuß komplett drauf. Füße hüftbreit.', 'Box about knee height, whole foot on it. Feet hip-width.'] },
+  calf: { eq: XG.gr() + XG.pad(22, 56, 18, 2), o: 1,
+    A: ST({ at: [30, 56], U: 92, F: 90 }), B: ST({ at: [30, 51], U: 92, F: 90 }),
+    c: [['s', 'Fußballen auf der Kante, Fersen tief', 'Balls of the feet on the edge, heels low', 'f'],
+        ['1', 'So hoch wie möglich auf die Zehen', 'Rise as high as possible onto the toes', 'f'],
+        ['u', 'Oben 1 Sekunde halten', 'Hold for 1 second at the top', 'f'],
+        ['2', 'Langsam tief in die Dehnung', 'Lower slowly into a deep stretch', 'f']],
+    g: ['Füße hüftbreit, Zehen gerade nach vorn. Knie gestreckt, aber nicht durchgedrückt.', 'Feet hip-width, toes straight ahead. Knees straight but not locked.'] },
+  seatedcalf: { eq: E.seat + XG.pad(38, 54, 6, 3), t: P => XG.pad(P.k[0] - 5, P.k[1] - 5, 10, 3), o: 1,
+    A: SEAT({ Sh: 92, U: 70, F: 0 }), B: SEAT({ Th: -10, Sh: 75, U: 70, F: 0 }),
+    c: [['s', 'Polster auf den Knien, Fußballen auf dem Block', 'Pad on the knees, balls of the feet on the block', 'k'],
+        ['1', 'Fersen kraftvoll hochdrücken', 'Press the heels up powerfully', 'f'],
+        ['u', 'Oben kurz halten', 'Hold briefly at the top', 'f'],
+        ['2', 'Langsam tief absenken', 'Lower slowly and deep', 'f']],
+    g: ['Füße hüftbreit, Zehen gerade nach vorn. Knie im 90°-Winkel.', 'Feet hip-width, toes straight ahead. Knees at 90°.'] },
+  hipthrust: { eq: XG.gr() + XG.bench(2, 18, 42), t: P => XG.plate([P.p[0], P.p[1] - 6], 5), o: 1,
+    A: { r: 's', at: [16, 39], T: -150, N: 180, Th: -12, Sh: 95, U: 30, F: -20 }, B: { r: 's', at: [16, 39], T: -182, N: 180, Th: 8, Sh: 100, U: 30, F: -20 },
+    c: [['s', 'Schulterblätter auf der Bankkante', 'Shoulder blades on the edge of the bench', 's'],
+        ['1', 'Hüfte nach oben drücken', 'Drive the hips up', 'p'],
+        ['u', 'Körper gerade, Po fest anspannen', 'Body straight, squeeze the glutes', '-sp'],
+        ['2', 'Langsam senken', 'Lower slowly', 'p']],
+    g: ['Füße hüftbreit, Schienbeine oben senkrecht. Stange mit Polster auf der Hüfte, Griff etwas breiter als die Hüfte.', 'Feet hip-width, shins vertical at the top. Padded bar on the hips, grip slightly wider than the hips.'] },
+  glutebridge: { eq: E.gr, o: 1,
+    A: { r: 's', at: [14, 55], T: 176, N: 180, Th: -32, Sh: 72, U: 5, F: 0 }, B: { r: 's', at: [14, 55], T: 152, N: 180, Th: 2, Sh: 88, U: 5, F: 0 },
+    c: [['s', 'Rückenlage, Füße nah am Po', 'On your back, feet close to the glutes', 'f'],
+        ['1', 'Hüfte nach oben drücken', 'Push the hips up', 'p'],
+        ['u', 'Oben gerade Linie, Po anspannen', 'Straight line at the top, squeeze the glutes', '-sp'],
+        ['2', 'Langsam ablegen', 'Lower slowly', 'p']],
+    g: ['Füße hüftbreit flach am Boden, Arme seitlich neben dem Körper.', 'Feet hip-width flat on the floor, arms by your sides.'] },
+  abductor: { eq: XG.gr() + XG.ln([20, 42], [44, 42]), o: 1,
+    A: FVS({}), B: FVS({ Th: 68, Sh: 68, Th2: 68, Sh2: 68 }),
+    c: [['s', 'Polster außen an den Knien, aufrecht sitzen', 'Pads on the outside of the knees, sit tall', 'k'],
+        ['1', 'Beine kraftvoll auseinanderdrücken', 'Push the legs apart', '~k'],
+        ['u', 'Außen kurz halten', 'Hold briefly at the widest point', 'k'],
+        ['2', 'Langsam zurück, nicht zuschlagen lassen', 'Return slowly, don\'t let the stack slam', '~k']],
+    g: ['Füße auf den Fußrasten, Rücken am Polster. Hände an den Seitengriffen.', 'Feet on the foot rests, back on the pad. Hands on the side handles.'] },
+  adductor: { eq: XG.gr() + XG.ln([20, 42], [44, 42]), o: 1,
+    A: FVS({ Th: 68, Sh: 68, Th2: 68, Sh2: 68 }), B: FVS({}),
+    c: [['s', 'Polster innen an den Knien, Beine geöffnet', 'Pads on the inside of the knees, legs open', 'k'],
+        ['1', 'Beine zusammendrücken', 'Squeeze the legs together', '~k'],
+        ['u', 'Innen kurz halten', 'Hold briefly', 'k'],
+        ['2', 'Langsam öffnen bis zur Dehnung', 'Open slowly to a stretch', '~k']],
+    g: ['Füße auf den Fußrasten, Rücken am Polster. Startweite so, dass es angenehm dehnt.', 'Feet on the foot rests, back on the pad. Start width at a comfortable stretch.'] },
+  glutekick: { eq: XG.gr() + E.tower(58), t: P => XG.cable([56, 55], P.f), o: 1,
+    A: { r: 'f2', at: [36, 56], Th2: 90, Sh2: 90, T: -75, Th: 95, Sh: 95, U: -15, F: -10 }, B: { r: 'f2', at: [36, 56], Th2: 90, Sh2: 90, T: -75, Th: 150, Sh: 150, U: -15, F: -10 },
+    c: [['s', 'Manschette am Knöchel, am Turm festhalten', 'Cuff on the ankle, hold the tower', 'f'],
+        ['1', 'Gestrecktes Bein nach hinten führen', 'Move the straight leg back', '~f'],
+        ['u', 'Po fest anspannen, kein Hohlkreuz', 'Squeeze the glutes, don\'t arch your back', 'p'],
+        ['2', 'Langsam zurück', 'Return slowly', '~f']],
+    g: ['Standbein leicht gebeugt, Füße hüftbreit. Oberkörper leicht nach vorn.', 'Standing leg slightly bent, feet hip-width. Torso leaning slightly forward.'] },
+
+  /* ---- Bauch ---- */
+  crunch: { eq: E.gr, o: 1,
+    A: LIEF({ U: -165, F: -20 }), B: LIEF({ T: 210, N: 210, U: -135, F: 10 }),
+    c: [['s', 'Füße aufgestellt, Hände an den Schläfen', 'Feet planted, hands at the temples', 'f'],
+        ['1', 'Schultern vom Boden einrollen', 'Curl the shoulders off the floor', 's'],
+        ['u', 'Bauch anspannen, nicht am Kopf ziehen', 'Tense the abs, don\'t pull on the head', 'h'],
+        ['2', 'Langsam ablegen', 'Lower slowly', 's']],
+    g: ['Füße hüftbreit aufgestellt, Knie ca. 90°. Ellbogen zeigen zur Seite.', 'Feet hip-width, knees about 90°. Elbows point to the sides.'] },
+  situp: { eq: XG.gr() + XG.pad(46, 52, 6, 4), o: 1,
+    A: LIEF({ U: -165, F: -20 }), B: LIEF({ T: 265, N: 265, U: -120, F: 30 }),
+    c: [['s', 'Füße fixiert, Hände an der Brust oder Schläfe', 'Feet anchored, hands at the chest or temples', 'f'],
+        ['1', 'Ganz aufrichten', 'Sit all the way up', 's'],
+        ['u', 'Rücken bleibt rund', 'Keep the back rounded', '-sp'],
+        ['2', 'Langsam abrollen', 'Roll down slowly', 's']],
+    g: ['Füße hüftbreit fixiert, Knie ca. 90°.', 'Feet hip-width and anchored, knees about 90°.'] },
+  bicyclecrunch: { eq: E.gr, o: 1,
+    A: LIEF({ T: 202, N: 202, Th: -60, Sh: 20, Th2: -10, Sh2: -5, U: -150, F: 0 }), B: LIEF({ T: 202, N: 202, Th: -10, Sh: -5, Th2: -60, Sh2: 20, U: -150, F: 0 }),
+    c: [['s', 'Schultern leicht vom Boden, Hände am Kopf', 'Shoulders slightly off the floor, hands at the head', 's'],
+        ['1', 'Ellbogen zum gegenüberliegenden Knie', 'Elbow to the opposite knee', 'k'],
+        ['u', 'Anderes Bein lang strecken', 'Extend the other leg long', 'f2'],
+        ['2', 'Seite wechseln, ruhig atmen', 'Switch sides, breathe steadily', 'k2']],
+    g: ['Lendenwirbelsäule bleibt am Boden. Ellbogen weit offen.', 'Lower back stays on the floor. Elbows wide.'] },
+  russiantwist: { eq: E.gr, t: P => XG.dbE(P.w), o: 1,
+    A: { r: 'p', at: [30, 52], T: -125, Th: -30, Sh: 25, U: 20, F: 10 }, B: { r: 'p', at: [30, 52], T: -125, Th: -30, Sh: 25, U: 60, F: 60 },
+    c: [['s', 'Oberkörper leicht zurück, Füße angehoben', 'Lean back slightly, feet off the floor', 'f'],
+        ['1', 'Gewicht zur einen Seite drehen', 'Rotate the weight to one side', 'w'],
+        ['u', 'Rücken bleibt gerade', 'Back stays straight', '-sp'],
+        ['2', 'Zur anderen Seite drehen', 'Rotate to the other side', 'w']],
+    g: ['Füße hüftbreit (leichter: Fersen am Boden). Gewicht mit beiden Händen vor der Brust.', 'Feet hip-width (easier: heels on the floor). Hold the weight with both hands at the chest.'] },
+  cablecrunch: { eq: XG.gr() + E.tower(56), t: P => XG.cable([54, 4], P.w), o: 1,
+    A: { r: 'k', at: [32, 55], Sh: 180, Th: 90, T: -85, N: -60, U: -150, F: 60 }, B: { r: 'k', at: [32, 55], Sh: 180, Th: 90, T: -5, N: 40, U: -80, F: 140 },
+    c: [['s', 'Kniend, Seil neben dem Kopf', 'Kneeling, rope beside the head', 'w'],
+        ['1', 'Oberkörper zu den Knien einrollen', 'Curl the torso towards the knees', 's'],
+        ['u', 'Hüfte bleibt still', 'Hips stay still', 'p'],
+        ['2', 'Langsam aufrichten', 'Rise slowly', 's']],
+    g: ['Seil mit neutralem Griff neben den Ohren. Knie hüftbreit.', 'Rope with neutral grip beside the ears. Knees hip-width.'] },
+  abmachine: { eq: E.seatB, o: 1,
+    A: SEAT({ U: 60, F: -125 }), B: SEAT({ T: -45, N: -40, U: 105, F: -80 }),
+    c: [['s', 'Polster an Brust/Schultern, Füße eingehakt', 'Pad at chest/shoulders, feet hooked', 's'],
+        ['1', 'Oberkörper nach vorn einrollen', 'Curl the torso forward', '-sp'],
+        ['u', 'Bauch fest anspannen', 'Squeeze the abs hard', 'p'],
+        ['2', 'Langsam zurück', 'Return slowly', 's']],
+    g: ['Sitz so, dass die Polster auf Brusthöhe sind. Griffe locker halten, nicht mit den Armen ziehen.', 'Seat set so the pads are at chest height. Hold the handles loosely, don\'t pull with the arms.'] },
+  legraise: { eq: E.gr, o: 1,
+    A: { r: 'p', at: [30, 55], T: 180, N: 180, Th: -4, Sh: -4, U: 5, F: 0 }, B: { r: 'p', at: [30, 55], T: 180, N: 180, Th: -90, Sh: -90, U: 5, F: 0 },
+    c: [['s', 'Rückenlage, Hände neben der Hüfte', 'On your back, hands by the hips', 'w'],
+        ['1', 'Gestreckte Beine bis senkrecht heben', 'Raise straight legs to vertical', '~f'],
+        ['u', 'Unterer Rücken bleibt am Boden', 'Lower back stays on the floor', 'p'],
+        ['2', 'Langsam senken, nicht ablegen', 'Lower slowly, don\'t touch down', '~f']],
+    g: ['Beine geschlossen, Hände flach neben dem Po (oder darunter).', 'Legs together, hands flat beside (or under) the glutes.'] },
+  hanglegraise: { vb: '0 0 64 68', eq: XG.ln([14, 3], [50, 3]) + XG.post(16, 3, 58) + XG.post(48, 3, 58) + XG.gr(), o: 1,
+    A: { r: 'w', at: [32, 3], F: -90, U: -90, T: -90, Th: 85, Sh: 95 }, B: { r: 'w', at: [32, 3], F: -90, U: -90, T: -92, Th: -2, Sh: 90 },
+    c: [['s', 'Ruhig hängen, Schultern aktiv', 'Hang still, shoulders engaged', 's'],
+        ['1', 'Beine bis Hüfthöhe heben', 'Raise the legs to hip height', '~f'],
+        ['u', 'Becken leicht einrollen', 'Tilt the pelvis slightly', 'p'],
+        ['2', 'Langsam senken, nicht schwingen', 'Lower slowly, no swinging', '~f']],
+    g: ['Obergriff schulterbreit. Leichter: Knie angewinkelt heben.', 'Overhand grip shoulder-width. Easier: raise bent knees.'] },
+  plank: { eq: E.gr, st: 1,
+    A: { r: 'f', at: [56, 56], Sh: 10, Th: 12, T: -165, N: -170, U: 90, F: 180 }, B: { r: 'f', at: [56, 56], Sh: 10, Th: 12, T: -165, N: -170, U: 90, F: 180 },
+    c: [['s', 'Unterarme unter den Schultern', 'Forearms under the shoulders', 'e'],
+        ['1', 'Körper eine gerade Linie', 'Body in a straight line', '-sp'],
+        ['u', 'Bauch und Po fest anspannen', 'Tense abs and glutes', 'p'],
+        ['2', 'Ruhig weiteratmen', 'Keep breathing calmly', 'h']],
+    g: ['Ellbogen schulterbreit unter den Schultern, Füße hüftbreit.', 'Elbows shoulder-width under the shoulders, feet hip-width.'] },
+  sideplank: { eq: E.gr, st: 1,
+    A: { r: 'f', at: [56, 56], Sh: 18, Th: 20, T: -158, N: -158, U: 90, F: 180, U2: -90, F2: -90 }, B: { r: 'f', at: [56, 56], Sh: 18, Th: 20, T: -158, N: -158, U: 90, F: 180, U2: -90, F2: -90 },
+    c: [['s', 'Ellbogen genau unter der Schulter', 'Elbow directly under the shoulder', 'e'],
+        ['1', 'Hüfte oben halten', 'Keep the hips up', 'p'],
+        ['u', 'Körper eine gerade Linie', 'Body in a straight line', '-sp'],
+        ['2', 'Ruhig atmen, dann Seite wechseln', 'Breathe calmly, then switch sides', 'h']],
+    g: ['Füße übereinander (leichter: versetzt). Freie Hand an der Hüfte oder nach oben.', 'Feet stacked (easier: staggered). Free hand on the hip or up.'] },
+  abroller: { eq: E.gr, vb: '-2 0 76 62', t: P => `<circle class="eq" cx="${P.w[0].toFixed(1)}" cy="${P.w[1].toFixed(1)}" r="3.5"/>`,
+    A: { r: 'k', at: [12, 55], Sh: 180, Th: 90, T: -55, U: 72, F: 75 }, B: { r: 'k', at: [12, 55], Sh: 180, Th: 160, T: -12, U: 10, F: 12 },
+    c: [['s', 'Kniend, Rolle unter den Schultern', 'Kneeling, wheel under the shoulders', 'w'],
+        ['1', 'Langsam nach vorn rollen', 'Roll forward slowly', '~w'],
+        ['u', 'Rücken gerade, kein Hohlkreuz', 'Back straight, no arching', '-sp'],
+        ['2', 'Mit dem Bauch zurückziehen', 'Pull back with the abs', 'p']],
+    g: ['Knie hüftbreit, Hände schulterbreit an den Griffen.', 'Knees hip-width, hands shoulder-width on the handles.'] },
+  mountain: { eq: E.gr, o: 1,
+    A: { r: 'w', at: [16, 56], F: 90, U: 90, T: -153, N: -165, Th: 27, Sh: 27, Th2: 160, Sh2: 40 }, B: { r: 'w', at: [16, 56], F: 90, U: 90, T: -153, N: -165, Th: 160, Sh: 40, Th2: 27, Sh2: 27 },
+    c: [['s', 'Liegestützposition, Hände unter den Schultern', 'Push-up position, hands under the shoulders', 'w'],
+        ['1', 'Knie zügig zur Brust', 'Drive the knee quickly to the chest', 'k'],
+        ['u', 'Hüfte bleibt tief', 'Hips stay low', 'p'],
+        ['2', 'Bein wechseln', 'Switch legs', 'k2']],
+    g: ['Hände schulterbreit, Füße hüftbreit.', 'Hands shoulder-width, feet hip-width.'] }
+});
+// Varianten
+Object.assign(EXA, {
+  smithohp: Object.assign({}, EXA.ohp, { eq: E.gr + XG.ln([38, 2], [38, 58]),
+    g: ['Griff knapp breiter als schulterbreit. Bank aufrecht, Stange vor dem Gesicht.', 'Grip just wider than shoulder-width. Bench upright, bar in front of the face.'] }),
+  shoulderpress: Object.assign({}, EXA.ohpdb, { t: T_.hd,
+    g: ['Griffe auf Schulterhöhe – Sitz entsprechend einstellen. Neutral- oder Obergriff.', 'Handles at shoulder height – adjust the seat. Neutral or overhand grip.'] }),
+  cablelateral: { eq: E.gr, t: P => XG.cable([22, 56], P.w) + XG.dbE(P.w), o: 1, A: FV({ U: 100, F: 120 }), B: FV({ U: -5, F: 5 }),
+    c: EXA.lateral.c, g: ['Seilzug unten, Griff in der Hand weiter weg vom Turm. Seitlich zum Turm stehen.', 'Pulley low, handle in the hand farther from the tower. Stand side-on to it.'] },
+  machinelateral: Object.assign({}, EXA.lateral, { t: null, eq: E.gr + XG.ln([22, 44], [42, 44]),
+    g: ['Polster außen an den Oberarmen, Schultergelenk auf Höhe der Drehachse.', 'Pads on the outside of the upper arms, shoulders lined up with the pivot.'] }),
+  cablefront: Object.assign({}, EXA.frontraise, { eq: XG.gr() + E.tower(6), t: P => XG.cable([8, 56], P.w) + XG.dbE(P.w),
+    g: ['Seilzug unten hinter dir, Griff zwischen den Beinen. Obergriff.', 'Pulley low behind you, handle between the legs. Overhand grip.'] }),
+  ezcurl: Object.assign({}, EXA.bbcurl, { g: ['SZ-Stange am inneren Knick, etwa schulterbreit. Füße hüftbreit.', 'EZ bar at the inner bend, about shoulder-width. Feet hip-width.'] }),
+  smithsquat: Object.assign({}, EXA.squat, { eq: E.gr + XG.ln([30, 2], [30, 58]),
+    g: ['Füße schulterbreit, etwas vor der Stange. Griff etwas breiter als schulterbreit.', 'Feet shoulder-width, slightly in front of the bar. Grip slightly wider than shoulders.'] }),
+  walklunge: Object.assign({}, EXA.lunge, { g: ['Schritte etwa hüftbreit versetzt, abwechselnd links/rechts.', 'Steps about hip-width offset, alternating left/right.'] })
+});
+
+return EXA;
+})();
+
+/* ---- Animation im Info-Fenster ---- */
+const XA_UI = (() => {
+  const L = LANG === 'en' ? 1 : 0;
+  const PH = [
+    { s: 'Ausgangsposition', '1': 'Absenken – langsam', u: 'Umkehrpunkt', '2': 'Hochdrücken – kraftvoll', z: '' },
+    { s: 'Starting position', '1': 'Lowering – slowly', u: 'Turning point', '2': 'Pressing up – powerfully', z: '' }];
+  const PHO = [
+    { s: 'Ausgangsposition', '1': 'Kraftphase – zügig', u: 'Spannung halten', '2': 'Zurück – langsam', z: '' },
+    { s: 'Starting position', '1': 'Working phase – controlled', u: 'Hold the tension', '2': 'Back – slowly', z: '' }];
+  const HOLD = ['Position halten', 'Hold the position'];
+  function html(id) {
+    const X = EXA[id]; if (!X) return '';
+    return `<div class="xa" data-xa="${id}"><div class="xa-st"></div>
+      <div class="xa-ph"></div><div class="xa-cue"></div><div class="xa-bar"><i></i></div>
+      <div class="xa-ctl"><button data-x="play">${L ? '❚❚ Pause' : '❚❚ Pause'}</button><button data-x="slow" class="on">${L ? 'Slow-mo' : 'Zeitlupe'}</button><button data-x="norm">${L ? 'Normal' : 'Normal'}</button></div></div>`;
+  }
+  function list(id) {
+    const X = EXA[id]; if (!X) return '';
+    return `<ol class="xa-ol">${X.c.map(c => `<li>${esc(c[1 + L])}</li>`).join('')}</ol>`;
+  }
+  function grip(id) { const X = EXA[id]; return X && X.g ? esc(X.g[L]) : ''; }
+  function mount(root) {
+    const el = root.querySelector('[data-xa]'); if (!el) return;
+    const X = EXA[el.dataset.xa], TOT = XA.total(X), lis = root.querySelectorAll('.xa-ol li');
+    const st = el.querySelector('.xa-st'), ph = el.querySelector('.xa-ph'), cueEl = el.querySelector('.xa-cue'), bar = el.querySelector('.xa-bar i');
+    let t = 0, speed = .6, run = true, last = 0, lastI = -2;
+    function draw() {
+      const s = XA.at(X, t), cs = X.c.filter(c => c[0] === s.ph);
+      const cue = cs.length ? cs[Math.min(cs.length - 1, Math.floor(s.u * cs.length))] : null, i = cue ? X.c.indexOf(cue) : -1;
+      st.innerHTML = XA.svg(X, s.v, cue);
+      ph.textContent = X.st ? HOLD[L] : (X.o ? PHO : PH)[L][s.ph];
+      if (i !== lastI) { cueEl.innerHTML = cue ? `<b>${i + 1}</b><span>${esc(cue[1 + L])}</span>` : ''; lis.forEach((li, j) => li.classList.toggle('on', j === i)); lastI = i; }
+      bar.style.width = (t / TOT * 100).toFixed(1) + '%';
+    }
+    function loop(ts) {
+      if (!el.isConnected) return;
+      if (run && last) t = (t + Math.min(.1, (ts - last) / 1000) * speed) % TOT;
+      last = ts; draw(); requestAnimationFrame(loop);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-x]'); if (!b) return; e.stopPropagation();
+      if (b.dataset.x === 'play') { run = !run; b.textContent = run ? '❚❚ Pause' : (L ? '▶ Play' : '▶ Abspielen'); }
+      else { speed = b.dataset.x === 'slow' ? .6 : 1; el.querySelectorAll('[data-x=slow],[data-x=norm]').forEach(x => x.classList.toggle('on', x === b)); }
+    });
+    draw(); requestAnimationFrame(loop);
+  }
+  return { html, list, grip, mount, has: id => !!EXA[id] };
+})();
+
 function showInfo(x) {
   if (!x) return;
   const txt = DESC[x.id] || 'Für diese eigene Übung gibt es noch keine Beschreibung.';
   const bg = document.createElement('div'); bg.className = 'info-bg';
   bg.innerHTML = `<div class="info-card" role="dialog" aria-label="Ausführung ${esc(x.name)}"><button class="info-x" aria-label="Schließen">${SV.x}</button>
     <div class="row" style="gap:10px;margin-bottom:8px;padding-right:30px"><div class="info-ic">${icon(x.icon)}</div><div class="title" style="line-height:1.2">${esc(x.name)}</div></div>
-    <div class="small muted" style="text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:4px">So geht's</div>
+    ${XA_UI.html(x.id)}
+    ${XA_UI.has(x.id) ? `<div class="info-h">Knackpunkte</div>${XA_UI.list(x.id)}` : ''}
+    ${XA_UI.grip(x.id) ? `<div class="info-h">Griff &amp; Stand</div><div class="info-txt">${XA_UI.grip(x.id)}</div>` : ''}
+    <div class="info-h">So geht's</div>
     <div class="info-txt">${esc(txt)}</div></div>`;
   const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = e => { if (e.key === 'Escape') close(); };
   bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('.info-x')) close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(bg);
+  XA_UI.mount(bg);
 }
 let toastT;
 function toast(msg) { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 2400); }
