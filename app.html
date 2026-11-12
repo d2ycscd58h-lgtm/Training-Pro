@@ -8,7 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Training">
 <meta name="theme-color" content="#121211">
-<title>Trainingstagebuch</title>
+<title>Trainingstagebuch – App</title>
+<meta name="description" content="Trainingstagebuch: Sätze mit Gewicht und Wiederholungen eintragen, Ziel für jedes Training, über 100 Übungen mit Animation. 24 h gratis testen.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
@@ -116,6 +117,12 @@
   .cal-d{font-size:13px;font-weight:600;color:var(--text-2)}
   .cal-tag{display:inline-block;max-width:100%;padding:2px 4px;border-radius:6px;font-size:11px;font-weight:800;color:#fff;text-align:center;line-height:1.3}
   .cal-tag.big{font-size:13px;padding:3px 7px}
+  .cal-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:100%;padding:0 2px}
+  .cal-tags .cal-tag{font-size:9.5px;padding:1px 3px;border-radius:5px;line-height:1.25}
+  .cal-more{font-size:9px;color:var(--muted);font-weight:700;line-height:1.5}
+  .cal-legend .off{opacity:.45}
+  .day-groups{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:2px 0 8px}
+  .day-groups .dg{display:inline-flex;align-items:center;gap:6px}
   .cal-tag.plan{background:transparent !important;border:2px dashed;padding:0 3px}
   .cal-cell.planned{background:var(--surface)}
   .cal-cell.missed{opacity:.5}
@@ -557,10 +564,10 @@ Object.assign(ICONS, {
 const icon = (key, cls = '') => `<svg class="ex ${cls}" viewBox="0 0 64 64" aria-hidden="true">${ICONS[key] || ICONS.generic}</svg>`;
 
 const BUILTIN = [
-  { id: 'treadmill', name: 'Laufband', icon: 'treadmill', cat: 'Aufwärmen', kind: 'cardio' },
-  { id: 'rower', name: 'Rudergerät', icon: 'rower', cat: 'Aufwärmen', kind: 'cardio' },
-  { id: 'stepper', name: 'Stepper', icon: 'stepper', cat: 'Aufwärmen', kind: 'cardio' },
-  { id: 'bike', name: 'Fahrrad', icon: 'bike', cat: 'Aufwärmen', kind: 'cardio' },
+  { id: 'treadmill', name: 'Laufband', icon: 'treadmill', cat: 'Cardio', kind: 'cardio' },
+  { id: 'rower', name: 'Rudergerät', icon: 'rower', cat: 'Cardio', kind: 'cardio' },
+  { id: 'stepper', name: 'Stepper', icon: 'stepper', cat: 'Cardio', kind: 'cardio' },
+  { id: 'bike', name: 'Fahrrad', icon: 'bike', cat: 'Cardio', kind: 'cardio' },
   { id: 'bench', name: 'Bankdrücken', icon: 'bench', cat: 'Brust' },
   { id: 'benchbb', name: 'Bankdrücken Langhantel', icon: 'benchbb', cat: 'Brust' },
   { id: 'incline', name: 'Schrägbankdrücken', icon: 'incline', cat: 'Brust' },
@@ -668,10 +675,10 @@ BUILTIN.push(
   { id: 'sideplank', name: 'Seitstütz (Sekunden)', icon: 'plank', cat: 'Bauch' },
   { id: 'abroller', name: 'Bauchroller', icon: 'plank', cat: 'Bauch' },
   { id: 'mountain', name: 'Mountain Climbers', icon: 'pushup', cat: 'Bauch' },
-  { id: 'crosstrainer', name: 'Crosstrainer', icon: 'stepper', cat: 'Aufwärmen', kind: 'cardio' },
-  { id: 'running', name: 'Laufen (draußen)', icon: 'treadmill', cat: 'Aufwärmen', kind: 'cardio' },
-  { id: 'jumprope', name: 'Seilspringen', icon: 'treadmill', cat: 'Aufwärmen', kind: 'cardio' },
-  { id: 'stretching', name: 'Dehnen / Mobility', icon: 'plank', cat: 'Aufwärmen', kind: 'cardio' },
+  { id: 'crosstrainer', name: 'Crosstrainer', icon: 'stepper', cat: 'Cardio', kind: 'cardio' },
+  { id: 'running', name: 'Laufen (draußen)', icon: 'treadmill', cat: 'Cardio', kind: 'cardio' },
+  { id: 'jumprope', name: 'Seilspringen', icon: 'treadmill', cat: 'Cardio', kind: 'cardio' },
+  { id: 'stretching', name: 'Dehnen / Mobility', icon: 'plank', cat: 'Cardio', kind: 'cardio' },
 );
 BUILTIN.forEach(x => { if (ICONS[x.id]) x.icon = x.id; });
 const DESC = {
@@ -797,9 +804,9 @@ const UI_EN = {
   'Starkes Training heute! 💪': 'Great workout today! 💪', 'Namen festlegen': 'Set your name',
   'Nur dieses Gerät': 'This device only', 'Gespeichert': 'Saved', 'Speichert…': 'Saving…', 'Synchronisiere…': 'Syncing…', 'Lädt…': 'Loading…', 'Offline': 'Offline', 'Nicht gespeichert': 'Not saved',
   'Heute': 'Today', 'Gestern': 'Yesterday', 'Vorheriger Tag': 'Previous day', 'Nächster Tag': 'Next day', 'Monatsübersicht öffnen': 'Open month view',
-  '⏱ Die Trainingszeit startet mit „Start“ beim Aufwärmen oder mit deinem ersten Eintrag': '⏱ The workout timer starts with “Start” on a warm-up or with your first entry',
+  '⏱ Die Trainingszeit startet mit „Start“ bei Cardio oder mit deinem ersten Eintrag': '⏱ The workout timer starts with “Start” on cardio or with your first entry',
   'Nächstes Training': 'Next workout', 'Meine Routinen': 'My routines', 'noch nie': 'never', 'Neue Routine': 'New routine', 'Zuletzt trainiert': 'Recently trained',
-  'Alle Übungen': 'All exercises', 'Aufwärmen': 'Warm-up', 'Brust': 'Chest', 'Rücken': 'Back', 'Beine': 'Legs', 'Schultern': 'Shoulders', 'Arme': 'Arms', 'Bauch': 'Abs', 'Eigene': 'Custom',
+  'Alle Übungen': 'All exercises', 'Cardio': 'Cardio', 'Brust': 'Chest', 'Rücken': 'Back', 'Beine': 'Legs', 'Schultern': 'Shoulders', 'Arme': 'Arms', 'Bauch': 'Abs', 'Eigene': 'Custom',
   'Eigene Übungen': 'Custom exercises', 'Übung hinzufügen': 'Add exercise', 'Ausführung anzeigen': 'Show how to', 'Optionen': 'Options',
   'Ziel heute:': 'Today\'s goal:', '– Ziele für jeden Satz stehen unten': '– goals for each set are below',
   'Tipp: Tippe auf die Satznummer, um einen Satz als': 'Tip: tap the set number to mark a set as a', 'Aufwärmsatz (A)': 'warm-up set (A)', 'zu markieren.': '',
@@ -854,14 +861,14 @@ const UI_EN = {
   'Die App begrüßt dich damit:': 'The app greets you with:', 'Bestwert': 'Best', 'Trainingszeit': 'Workout time', 'Training': 'Workout',
 };
 // Dynamische Texte (reguläre Ausdrücke, Reihenfolge wichtig)
-const GRP_EN = { 'Brust': 'Chest', 'Rücken': 'Back', 'Bein': 'Leg', 'Beine': 'Leg', 'Schultern': 'Shoulder', 'Arme': 'Arm', 'Bauch': 'Abs', 'Aufwärmen': 'Warm-up', 'Eigene': 'Custom', 'Neue': 'New' };
+const GRP_EN = { 'Brust': 'Chest', 'Rücken': 'Back', 'Bein': 'Leg', 'Beine': 'Leg', 'Schultern': 'Shoulder', 'Arme': 'Arm', 'Bauch': 'Abs', 'Cardio': 'Cardio', 'Eigene': 'Custom', 'Neue': 'New' };
 const RX_EN = [
   [/^Hallo (.+) 👋$/, 'Hi $1 👋'], [/^Hallo 👋$/, 'Hi 👋'],
-  [/^(Brust|Rücken|Beine?|Schultern|Arme|Bauch|Aufwärmen|Eigene|Neue)-Tag$/, (m, g) => GRP_EN[g] + ' day'],
+  [/^(Brust|Rücken|Beine?|Schultern|Arme|Bauch|Cardio|Eigene|Neue)-Tag$/, (m, g) => GRP_EN[g] + ' day'],
   [/^(.*) · (Brust|Rücken|Beine?|Schultern|Arme|Bauch)-Tag$/, (m, a, g) => a + ' · ' + GRP_EN[g] + ' day'],
-  [/^(Brust|Rücken|Beine?|Schultern|Arme|Bauch|Aufwärmen|Eigene)-Tag (.*)$/, (m, g, r) => GRP_EN[g] + ' day ' + r],
+  [/^(Brust|Rücken|Beine?|Schultern|Arme|Bauch|Cardio|Eigene)-Tag (.*)$/, (m, g, r) => GRP_EN[g] + ' day ' + r],
   [/^Letztes Mal \((.+?)\): (.*)$/, 'Last time ($1): $2'],
-  [/^Aufwärmen · (.*)$/, 'Warm-up · $1'],
+  
   [/^Heute, (.*)$/, 'Today, $1'], [/^Gestern, (.*)$/, 'Yesterday, $1'],
   [/^Weiter: (.*) →$/, 'Next: $1 →'], [/^Fertig \((\d+) ausgewählt\)$/, 'Done ($1 selected)'],
   [/^(\d+) Übungen? in dieser Reihenfolge$/, (m, n) => n + (n === '1' ? ' exercise' : ' exercises') + ' in this order'],
@@ -914,7 +921,7 @@ function trNode(root) {
   while ((n = w.nextNode())) { if (n.parentElement && n.parentElement.closest('script,style,textarea')) continue; const v = trText(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; }
   [root, ...root.querySelectorAll('[placeholder],[aria-label],[title]')].forEach(e => ['placeholder', 'aria-label', 'title'].forEach(a => { const v = e.getAttribute && e.getAttribute(a); if (v) { const t = trText(v); if (t !== v) e.setAttribute(a, t); } }));
 }
-const CATS = ['Aufwärmen', 'Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Eigene'];
+const CATS = ['Cardio', 'Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Eigene'];
 
 /* ================= Persönliche Einstellungen ================= */
 const ACCENTS = [['#3987e5', 'Blau'], ['#199e70', 'Grün'], ['#d95926', 'Orange'], ['#9085e9', 'Lila'], ['#d55181', 'Pink'], ['#e04a4a', 'Rot'], ['#1b9fb0', 'Türkis'], ['#c98500', 'Gold']];
@@ -1037,7 +1044,7 @@ function touchDay(k) { if (k !== todayKey()) return; const d = S.days[k]; if (!d
 function timerInfo(k) { const d = S.days[k]; if (!d || !d.start) return null; const live = !d.finished && k === todayKey() && (!!d.run || Date.now() - (d.end || d.start) < LIVE_MS); return { live, start: d.start, end: d.end || d.start }; }
 function timerHTML(k) {
   const t = timerInfo(k);
-  if (!t) return k === todayKey() ? '<span class="muted">⏱ Die Trainingszeit startet mit „Start“ beim Aufwärmen oder mit deinem ersten Eintrag</span>' : '';
+  if (!t) return k === todayKey() ? '<span class="muted">⏱ Die Trainingszeit startet mit „Start“ bei Cardio oder mit deinem ersten Eintrag</span>' : '';
   if (t.live) return `<div class="row between"><div>⏱ <b class="tclock" data-timer="${k}">${clock((Date.now() - t.start) / 1000)}</b> <span class="muted">seit ${hhmm(t.start)}</span></div><button class="btn sm end-btn" data-act="finish-day">■ Training beenden</button></div>`;
   return `${S.days[k].finished ? '✅ Training beendet · ' : '⏱ '}Trainingszeit <b>${fmtDur(t.end - t.start)}</b> <span class="muted">(${hhmm(t.start)}–${hhmm(t.end)})</span>`;
 }
@@ -1073,6 +1080,7 @@ const TABS = [
   ['progress', 'Fortschritt', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M5 15l4-4 3 3 6-6"/><path d="M15 8h3v3"/></svg>'],
 ];
 function render() {
+  (S.custom || []).forEach(x => { if (x.cat === 'Aufwärmen') x.cat = 'Cardio'; });
   $('#tabs').innerHTML = TABS.map(([k, l, i]) => `<button data-act="tab" data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${i}${l}</button>`).join('');
   if (S.settings) { $('#hdr').innerHTML = `<button class="btn sm" data-act="settings-close" style="padding-left:6px">${SV.back} Einstellungen</button>`; $('#main').innerHTML = viewSettings(); return; }
   const hdr = { today: 'Training', history: 'Verlauf', progress: 'Fortschritt' }[S.tab];
@@ -1120,8 +1128,8 @@ function tileHTML(x, k) {
 const dispName = e => { const x = exById(e.exId); return x ? x.name : e.name; };
 const routineById = id => S.routines.find(r => r.id === id);
 function routineGroup(r) {
-  const cnt = {}; r.exIds.forEach(id => { const x = exById(id); if (x) cnt[x.cat] = (cnt[x.cat] || 0) + 1; });
-  const pri = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Eigene', 'Aufwärmen'];
+  const cnt = {}; r.exIds.forEach(id => { const x = exById(id); if (x) { const c = fixCat(x.cat); cnt[c] = (cnt[c] || 0) + 1; } });
+  const pri = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Cardio', 'Eigene'];
   let pool = ['Brust', 'Rücken', 'Beine', 'Schultern'].filter(c => cnt[c]); if (!pool.length) pool = pri.filter(c => cnt[c]);
   return pool.sort((a, b) => cnt[b] - cnt[a] || pri.indexOf(a) - pri.indexOf(b))[0] || null;
 }
@@ -1279,7 +1287,7 @@ function viewExercise() {
 function viewCardio(x, k, sets, prev) {
   const s0 = sets[0] || {}; const pm = prev ? prev.sets.reduce((a, s) => a + (s.m || 0), 0) : null;
   let h = `<div class="ex-hero"><div class="ic">${icon(x.icon)}</div><div class="grow"><h2>${esc(x.name)}</h2>
-    <div class="small muted">Aufwärmen · ${esc(relDay(k))}, ${fmtKey(k, { day: '2-digit', month: '2-digit', year: 'numeric' })}</div></div>
+    <div class="small muted">Cardio · ${esc(relDay(k))}, ${fmtKey(k, { day: '2-digit', month: '2-digit', year: 'numeric' })}</div></div>
     <button class="info-btn" data-act="ex-info" aria-label="Ausführung anzeigen">i</button><button class="icon-btn" data-act="ex-menu" aria-label="Optionen">${SV.dots}</button></div>
     ${timerHTML(k) ? `<div class="timerbar">${timerHTML(k)}</div>` : ''}`;
   h += prev ? `<div class="target"><div class="small t2">Letztes Mal (${esc(fmtKey(prev.date, { day: '2-digit', month: '2-digit' }))}): <b>${fmtNum(pm)} min</b></div></div>`
@@ -1362,19 +1370,31 @@ function viewHistory() {
 }
 
 /* ---- Monatsübersicht ---- */
-// Hauptmuskelgruppe eines Tages = Gruppe mit den meisten Sätzen (Aufwärmen/Bauch/Arme zählen nur, wenn sonst nichts da ist)
+// Hauptmuskelgruppe eines Tages = Gruppe mit den meisten Sätzen (Bauch/Arme/Cardio zählen nur, wenn sonst nichts da ist)
 const GROUPS = {
   'Brust': { ab: 'Br', col: '#3987e5' }, 'Rücken': { ab: 'Rü', col: '#d95926' }, 'Beine': { ab: 'Be', col: '#199e70' },
-  'Schultern': { ab: 'Sch', col: '#9085e9' }, 'Arme': { ab: 'Ar', col: '#c98500' }, 'Bauch': { ab: 'Ba', col: '#d55181' },
-  'Aufwärmen': { ab: 'Au', col: '#77766f' }, 'Eigene': { ab: '✓', col: '#77766f' },
+  'Schultern': { ab: 'Sc', col: '#7c6fe0' }, 'Arme': { ab: 'Ar', col: '#b87a00' }, 'Bauch': { ab: 'Ba', col: '#d14a7c' },
+  'Cardio': { ab: 'Ca', col: '#0a8ea3' }, 'Eigene': { ab: 'Ei', col: '#6f6e68' },
 };
 const LEGACY_CAT = { row: 'Rücken' };
-function catOf(e) { const x = exById(e.exId); return x ? (x.cat || 'Eigene') : (LEGACY_CAT[e.exId] || 'Eigene'); }
+function fixCat(c) { return c === 'Aufwärmen' ? 'Cardio' : c; }
+function catOf(e) { const x = exById(e.exId); return x ? (fixCat(x.cat) || 'Eigene') : (LEGACY_CAT[e.exId] || 'Eigene'); }
+// alle trainierten Gruppen eines Tages, nach Anzahl Sätzen sortiert
+function dayGroups(k) {
+  const d = S.days[k]; if (!d) return [];
+  const cnt = {}, order = Object.keys(GROUPS);
+  d.entries.forEach(e => { const n = validSets(e.sets).length; if (n) { const c = catOf(e); cnt[c] = (cnt[c] || 0) + n; } });
+  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || order.indexOf(a) - order.indexOf(b));
+}
+function groupTags(list, max) {
+  const show = list.slice(0, max || 9), more = list.length - show.length;
+  return show.map(g => `<span class="cal-tag" style="background:${GROUPS[g].col}">${GROUPS[g].ab}</span>`).join('') + (more > 0 ? `<span class="cal-more">+${more}</span>` : '');
+}
 function mainGroup(k) {
   const d = S.days[k]; if (!d) return null;
   const cnt = {};
   d.entries.forEach(e => { const n = validSets(e.sets).length; if (n) { const c = catOf(e); cnt[c] = (cnt[c] || 0) + n; } });
-  const order = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Eigene', 'Aufwärmen'];
+  const order = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Cardio', 'Eigene'];
   const primary = ['Brust', 'Rücken', 'Beine', 'Schultern'];
   let pool = primary.filter(c => cnt[c]);
   if (!pool.length) pool = order.filter(c => cnt[c]);
@@ -1390,12 +1410,12 @@ function viewCalendar() {
   let cells = '';
   for (let i = 0; i < lead; i++) cells += '<div class="cal-cell empty"></div>';
   for (let d = 1; d <= days; d++) {
-    const k = `${y}-${pad(m + 1)}-${pad(d)}`, g = mainGroup(k);
-    if (g) { stats[g] = (stats[g] || 0) + 1; total++; }
+    const k = `${y}-${pad(m + 1)}-${pad(d)}`, g = mainGroup(k), gl = dayGroups(k);
+    if (g) { total++; gl.forEach(x => { stats[x] = (stats[x] || 0) + 1; }); }
     const G = g && GROUPS[g], P = !g && S.plan[k], PG = P && GROUPS[planGroup(P)];
     if (P && k >= today) planned++;
     cells += `<button class="cal-cell ${k === today ? 'today' : ''} ${g ? 'has' : ''} ${P ? 'planned' : ''} ${P && k < today ? 'missed' : ''}" data-act="${g ? 'cal-day' : P ? 'plan-tap' : k < today ? 'cal-goto' : 'plan-new'}" data-k="${k}">
-      <span class="cal-d">${d}</span>${G ? `<span class="cal-tag" style="background:${G.col}">${G.ab}</span>` : P ? `<span class="cal-tag plan" style="border-color:${PG ? PG.col : 'var(--muted)'};color:${PG ? PG.col : 'var(--muted)'}">${PG ? PG.ab : '•'}</span><span class="cal-time">${esc(P.t || '')}</span>` : ''}</button>`;
+      <span class="cal-d">${d}</span>${G ? `<span class="cal-tags">${groupTags(gl, 4)}</span>` : P ? `<span class="cal-tag plan" style="border-color:${PG ? PG.col : 'var(--muted)'};color:${PG ? PG.col : 'var(--muted)'}">${PG ? PG.ab : '•'}</span><span class="cal-time">${esc(P.t || '')}</span>` : ''}</button>`;
   }
   const next = new Date(y, m + 1, 1) > new Date(new Date().getFullYear() + 1, new Date().getMonth(), 1);
   const upcoming = Object.keys(S.plan).filter(k => k >= today && !mainGroup(k)).sort();
@@ -1405,14 +1425,15 @@ function viewCalendar() {
     <div class="card cal" style="margin-top:12px">
       <div class="cal-grid cal-head">${['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(w => `<div>${w}</div>`).join('')}</div>
       <div class="cal-grid">${cells}</div></div>
-    ${total ? `<div class="cal-legend">${Object.keys(GROUPS).filter(g => stats[g]).map(g => `<span><i style="background:${GROUPS[g].col}">${GROUPS[g].ab}</i>${esc(g)} <b>${stats[g]}×</b></span>`).join('')}</div>` : '<div class="empty small">In diesem Monat noch kein Training eingetragen.</div>'}
+    <div class="cal-legend">${Object.keys(GROUPS).map(g => `<span${stats[g] ? '' : ' class="off"'}><i style="background:${GROUPS[g].col}">${GROUPS[g].ab}</i><span>${esc(g)}</span>${stats[g] ? ` <b>${stats[g]}×</b>` : ''}</span>`).join('')}</div>
+    ${total ? '' : '<div class="empty small">In diesem Monat noch kein Training eingetragen.</div>'}
     <div class="small muted" style="margin-top:10px">Tippe auf einen vergangenen Tag, um zu sehen, was du trainiert hast. <b>Tippe auf einen zukünftigen Tag, um ein Training zu planen.</b> Umrandete Kürzel sind geplant.</div>
     ${upcoming.length ? `<div class="card" style="margin-top:14px"><div class="title" style="font-size:15px">Geplante Trainings (${upcoming.length})</div>
       ${upcoming.slice(0, 6).map(k => { const P = S.plan[k], PG = GROUPS[planGroup(P)]; return `<button class="planrow" data-act="plan-tap" data-k="${k}"><span class="cal-tag plan" style="border-color:${PG ? PG.col : 'var(--muted)'};color:${PG ? PG.col : 'var(--muted)'}">${PG ? PG.ab : '•'}</span><span class="grow">${esc(planLabel(P))}</span><span class="small muted">${fmtKey(k, { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${esc(P.t || '')}</span></button>`; }).join('')}
       ${calExportButtons(upcoming.length)}</div>` : ''}`;
 }
 /* ---- Trainings planen ---- */
-const PLAN_GROUPS = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme'];
+const PLAN_GROUPS = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Cardio'];
 function planGroup(P) { if (!P) return null; const r = P.r && routineById(P.r); return r ? routineGroup(r) : (P.g || null); }
 function planLabel(P) { const r = P.r && routineById(P.r); return r ? (r.name || 'Routine') : P.g ? P.g + '-Tag' : 'Training'; }
 const REMIND = [[0, 'Keine'], [15, '15 min vorher'], [30, '30 min vorher'], [60, '1 Std. vorher'], [120, '2 Std. vorher']];
@@ -1482,7 +1503,8 @@ function daySummaryHTML(k) {
   const d = S.days[k]; const ents = d.entries.filter(e => validSets(e.sets).length);
   const g = mainGroup(k), G = g && GROUPS[g];
   const dur = d.start && d.end && d.end > d.start ? ' · ⏱ ' + fmtDur(d.end - d.start) : '';
-  return `${G ? `<div style="margin:2px 0 8px"><span class="cal-tag big" style="background:${G.col}">${G.ab}</span> <b>${esc(g)}-Tag</b><span class="muted small">${dur}</span></div>` : ''}` +
+  const gl = dayGroups(k);
+  return `${G ? `<div class="day-groups">${gl.map(x => `<span class="dg"><span class="cal-tag big" style="background:${GROUPS[x].col}">${GROUPS[x].ab}</span><b>${esc(x)}</b></span>`).join('')}<span class="muted small">${dur}</span></div>` : ''}` +
     ents.map(e => `<div class="sess-ex">${icon(e.icon, 'ic')}<div class="grow"><div style="font-weight:600;color:var(--text)">${esc(dispName(e))}</div><div class="small t2">${esc(setsText(e.sets))}</div></div></div>`).join('');
 }
 
@@ -2637,7 +2659,7 @@ function showSplash() {
 }
 if (LANG === 'en') {
   Object.assign(GROUPS['Brust'], { ab: 'Ch' }); Object.assign(GROUPS['Rücken'], { ab: 'Bk' }); Object.assign(GROUPS['Beine'], { ab: 'Lg' });
-  Object.assign(GROUPS['Schultern'], { ab: 'Sh' }); Object.assign(GROUPS['Arme'], { ab: 'Ar' }); Object.assign(GROUPS['Bauch'], { ab: 'Ab' }); Object.assign(GROUPS['Aufwärmen'], { ab: 'Wu' });
+  Object.assign(GROUPS['Schultern'], { ab: 'Sh' }); Object.assign(GROUPS['Arme'], { ab: 'Ar' }); Object.assign(GROUPS['Bauch'], { ab: 'Ab' }); Object.assign(GROUPS['Cardio'], { ab: 'Ca' }); Object.assign(GROUPS['Eigene'], { ab: 'Cu' });
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(trNode))).observe(document.body, { childList: true, subtree: true });
   trNode(document.body);
 }
@@ -2649,7 +2671,8 @@ const LIC_CFG = {
   productId: 0,    // Produkt-ID. 0 = nicht prüfen
   price: '4,99 €', // Anzeige in der App
   trialHours: 24,  // Testphase in Stunden
-  recheckDays: 7   // so oft wird der Code online nachgeprüft (z. B. nach Rückerstattung)
+  recheckDays: 7,  // so oft wird der Code online nachgeprüft (z. B. nach Rückerstattung)
+  allowTest: false // Codes aus Testkäufen (Testmodus) nicht akzeptieren
 };
 const LS_API = 'https://api.lemonsqueezy.com/v1/licenses/';
 const T = (de, en) => LANG === 'en' ? en : de;
@@ -2664,7 +2687,8 @@ const Lic = {
     let j = null; try { j = await r.json(); } catch (e) {}
     return { http: r.status, j: j || {} };
   },
-  matches(meta) {
+  matches(meta, lk) {
+    if (!LIC_CFG.allowTest && lk && lk.test_mode === true) return false;
     if (!meta) return true;
     if (LIC_CFG.storeId && +meta.store_id !== +LIC_CFG.storeId) return false;
     if (LIC_CFG.productId && +meta.product_id !== +LIC_CFG.productId) return false;
@@ -2682,15 +2706,15 @@ const Lic = {
       if (/limit/i.test(m)) throw new Error(T('Dieser Code ist schon auf der maximalen Anzahl Geräte aktiv.', 'This key is already active on the maximum number of devices.'));
       throw new Error(T('Dieser Code ist ungültig. Bitte prüfe die Eingabe (am besten aus der Kauf-Mail kopieren).', 'This key is not valid. Please check it (best copy it from your purchase email).'));
     }
-    if (!this.matches(j.meta)) throw new Error(T('Dieser Code gehört zu einem anderen Produkt.', 'This key belongs to a different product.'));
+    if (!this.matches(j.meta, j.license_key)) throw new Error(T('Dieser Code ist für diese App nicht gültig.', 'This key is not valid for this app.'));
     Object.assign(this.st, { key, inst: (j.instance && j.instance.id) || '', ok: true, checked: Date.now() }); this.save();
   },
   async recheck() {
     if (!this.st.key || Date.now() - this.st.checked < LIC_CFG.recheckDays * 864e5 || !navigator.onLine) return;
     try {
       const { http, j } = await this.call('validate', this.st.inst ? { license_key: this.st.key, instance_id: this.st.inst } : { license_key: this.st.key });
-      if (j.valid === true && this.matches(j.meta)) { this.st.ok = true; this.st.checked = Date.now(); this.save(); }
-      else if (j.valid === false || http === 404) { this.st.ok = false; this.save(); this.gate(); }
+      if (j.valid === true && this.matches(j.meta, j.license_key)) { this.st.ok = true; this.st.checked = Date.now(); this.save(); }
+      else if (j.valid === false || http === 404 || (j.valid === true && !this.matches(j.meta, j.license_key))) { this.st.ok = false; this.save(); this.gate(); }
     } catch (e) { /* offline o. ä.: Freischaltung bleibt bestehen */ }
   },
   fmtLeft() {
