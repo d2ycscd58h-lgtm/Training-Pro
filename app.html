@@ -189,6 +189,7 @@
   .info-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center}
   .info-ic{width:46px;height:46px;flex:none;color:var(--accent)}
   .info-txt{font-size:15px;line-height:1.45}
+  .health{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);line-height:1.4}
   .hint-box{background:color-mix(in srgb, var(--accent) 12%, var(--surface));border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));border-radius:14px;padding:12px 14px;margin:0 0 12px;font-size:14px;line-height:1.4}
   .hint-acts{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin-top:8px}
   .info-card{max-height:calc(100vh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -821,7 +822,7 @@ const UI_EN = {
   'Wird bei „Stopp“ automatisch ausgefüllt, du kannst es aber auch selbst eintragen.': 'Filled in automatically when you press “Stop” – or enter it yourself.',
   'Für frühere Tage die Minuten unten eintragen': 'For past days, enter the minutes below',
   'Erstes Mal – trag einfach ein, was du schaffst. Beim nächsten Mal siehst du hier dein Ziel.': 'First time – just log what you manage. Next time you\'ll see your goal here.',
-  "So geht's": 'How to', 'Knackpunkte': 'Key points', 'Griff & Stand': 'Grip & stance', 'Schließen': 'Close', 'Aus der Übersicht entfernen': 'Remove from list', 'Übung löschen': 'Delete exercise', 'Name / Bild ändern': 'Change name / image',
+  "So geht's": 'How to', 'Gesundheit': 'Health', 'Hinweis: Die App ersetzt keine ärztliche oder trainingsfachliche Beratung. Trainiere nur, wenn du gesund bist, und brich bei Schmerzen, Schwindel oder Unwohlsein ab. Bei Vorerkrankungen oder Unsicherheit vorher ärztlich abklären lassen.': 'Note: This app is not a substitute for medical or professional training advice. Only train when you are healthy, and stop if you feel pain, dizziness or discomfort. If you have health conditions or are unsure, check with a doctor first.', '⚠️ Keine medizinische Beratung. Bei Schmerzen oder Unwohlsein abbrechen, bei Vorerkrankungen vorher ärztlich abklären.': '⚠️ Not medical advice. Stop if you feel pain or discomfort; check with a doctor first if you have health conditions.', 'Keine medizinische Beratung. Bei Schmerzen oder Unwohlsein abbrechen, bei Vorerkrankungen vorher ärztlich abklären.': 'Not medical advice. Stop if you feel pain or discomfort; check with a doctor first if you have health conditions.', 'Knackpunkte': 'Key points', 'Griff & Stand': 'Grip & stance', 'Schließen': 'Close', 'Aus der Übersicht entfernen': 'Remove from list', 'Übung löschen': 'Delete exercise', 'Name / Bild ändern': 'Change name / image',
   'Für diese eigene Übung gibt es noch keine Beschreibung.': 'There\'s no description for this custom exercise yet.',
   '■ Training beenden': '■ Finish workout', 'Training beenden?': 'Finish workout?', 'Heutige Routine': 'Today\'s routine', 'Routine bearbeiten': 'Edit routine', 'Andere Routine': 'Other routine',
   'Aufwärmsatz · zählt nicht für Ziele und Rekorde': 'Warm-up set · doesn\'t count for goals and records', 'Aufwärmsatz – tippen für Arbeitssatz': 'Warm-up set – tap for working set',
@@ -1151,7 +1152,8 @@ function viewSettings() {
     <div class="card row" style="gap:12px"><div style="width:54px;height:54px;color:var(--accent)">${icon('benchbb')}</div><div class="grow"><div class="title">${esc(exById('benchbb').name)}</div><div class="goal" style="margin:2px 0 0">🎯 Ziel: 82,5 kg × 8 Wdh.</div></div><button class="btn primary sm">Start</button></div>
     <h2>Daten</h2>
     <button class="btn block" data-act="settings-data">Backup & Daten (im Verlauf)</button>
-    <h2>Lizenz</h2>${Lic.settingsHTML().replace(/^<label class="lab">[^<]*<\/label>/, "")}`;
+    <h2>Lizenz</h2>${Lic.settingsHTML().replace(/^<label class="lab">[^<]*<\/label>/, "")}
+    <h2>Gesundheit</h2><div class="small t2" style="line-height:1.45">Hinweis: Die App ersetzt keine ärztliche oder trainingsfachliche Beratung. Trainiere nur, wenn du gesund bist, und brich bei Schmerzen, Schwindel oder Unwohlsein ab. Bei Vorerkrankungen oder Unsicherheit vorher ärztlich abklären lassen.</div>`;
 }
 function tileHTML(x, k) {
   const e = getEntry(k, x.id); const n = e ? validSets(e.sets).length : 0;
@@ -2506,7 +2508,8 @@ function showInfo(x) {
     ${XA_UI.has(x.id) ? `<div class="info-h">Knackpunkte</div>${XA_UI.list(x.id)}` : ''}
     ${XA_UI.grip(x.id) ? `<div class="info-h">Griff &amp; Stand</div><div class="info-txt">${XA_UI.grip(x.id)}</div>` : ''}
     <div class="info-h">So geht's</div>
-    <div class="info-txt">${esc(txt)}</div></div>`;
+    <div class="info-txt">${esc(txt)}</div>
+    <div class="health small">⚠️ Keine medizinische Beratung. Bei Schmerzen oder Unwohlsein abbrechen, bei Vorerkrankungen vorher ärztlich abklären.</div></div>`;
   const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = e => { if (e.key === 'Escape') close(); };
   bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('.info-x')) close(); });
