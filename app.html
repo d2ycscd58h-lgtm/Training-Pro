@@ -189,12 +189,18 @@
   .info-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center}
   .info-ic{width:46px;height:46px;flex:none;color:var(--accent)}
   .info-txt{font-size:15px;line-height:1.45}
+  .hint-box{background:color-mix(in srgb, var(--accent) 12%, var(--surface));border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));border-radius:14px;padding:12px 14px;margin:0 0 12px;font-size:14px;line-height:1.4}
+  .hint-acts{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin-top:8px}
   .info-card{max-height:calc(100vh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch}
   .xa{margin:2px 0 10px}
   .xa-st{background:var(--surface-2);border-radius:14px;padding:6px 6px 0}
   .xa-st svg{display:block;width:100%;max-height:210px;color:var(--accent)}
-  .xsv .fg{fill:none;stroke:currentColor;stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round}
-  .xsv .b2 .fg{opacity:.5}
+  .xsv .fg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+  .xsv .fg.ol{stroke:var(--surface-2)}
+  .xsv .b2{opacity:.45}
+  .xsv .b2 .ol{display:none}
+  .xsv .pl{fill:var(--surface-3);stroke:var(--text-2);stroke-width:2.2}
+  .xsv .pl2{fill:var(--text-2);stroke:var(--surface-2);stroke-width:1}
   .xsv .hd{fill:currentColor}
   .xsv .eq{fill:none;stroke:var(--text-2);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
   .xsv .eqf{fill:var(--text-2)}
@@ -1056,14 +1062,40 @@ function startRun(k, exId) {
   const now = Date.now(); if (!d.start) d.start = now; d.end = now;
   d.run = { exId, t0: now }; Store.saveDay(k, true);
 }
-function stopRun(k) {
+const RUN_MAX = 180; // Minuten
+function stopRun(k, auto) {
   const d = S.days[k]; if (!d || !d.run) return;
-  const e = getEntry(k, d.run.exId, true); if (!e.sets.length) e.sets.push({ m: null });
-  const mins = Math.max(1, Math.round((Date.now() - d.run.t0) / 60000));
-  e.sets[0].m = (e.sets[0].m || 0) + mins;
-  d.run = null; touchDay(k); Store.saveDay(k, true);
-  toast(mins + ' min eingetragen');
+  const exId = d.run.exId, t0 = d.run.t0;
+  const e = getEntry(k, exId, true); if (!e.sets.length) e.sets.push({ m: null });
+  const mins = Math.min(RUN_MAX, Math.max(1, Math.round((Date.now() - t0) / 60000)));
+  e.sets[0].m = Math.min(999, (e.sets[0].m || 0) + mins);
+  d.run = null;
+  if (auto) d.end = Math.max(d.end || 0, t0 + RUN_MAX * 60000); else touchDay(k);
+  Store.saveDay(k, true);
+  if (!auto) toast(mins + ' min eingetragen');
+  return { exId, mins };
 }
+function checkRuns() {
+  for (const k of Object.keys(S.days)) { const d = S.days[k];
+    if (!d || !d.run || Date.now() - d.run.t0 < RUN_MAX * 60000) continue;
+    const r = stopRun(k, true), x = exById(r.exId), en = LANG === 'en';
+    render();
+    try { if (window.Notification && Notification.permission === 'granted') navigator.serviceWorker.ready.then(g => g.showNotification(en ? 'Cardio stopped' : 'Cardio gestoppt', { body: en ? 'Stopped automatically after 3 hours.' : 'Nach 3 Stunden automatisch gestoppt.' })).catch(() => {}); } catch (_) {}
+    modal({ title: en ? 'Cardio stopped automatically' : 'Cardio automatisch gestoppt',
+      body: esc(en ? `${x ? x.name : 'Cardio'}: the stopwatch ran for 3 hours and was stopped. ${r.mins} min were logged – you can adjust the time.` : `${x ? x.name : 'Cardio'}: Die Stoppuhr lief 3 Stunden und wurde gestoppt. ${r.mins} min wurden eingetragen – du kannst die Zeit anpassen.`),
+      ok: en ? 'Adjust time' : 'Zeit anpassen', cancel: 'OK' }).then(go => { if (go) { S.settings = false; S.cal = null; S.tab = 'today'; S.day = k; S.ex = r.exId; render(); window.scrollTo(0, 0); } });
+  }
+}
+// 1) Tageswechsel: war „heute“ geöffnet, springt die App nach Mitternacht auf den neuen Tag
+let lastToday = todayKey();
+function checkDay() {
+  const t = todayKey();
+  if (t !== lastToday) { const was = S.day === lastToday; lastToday = t; if (was) { S.day = t; S.ex = null; render(); } }
+  checkRuns();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDay(); });
+window.addEventListener('focus', checkDay); window.addEventListener('pageshow', checkDay);
+setInterval(checkDay, 20000);
 setInterval(() => { document.querySelectorAll('[data-run]').forEach(el => { const r = runOf(el.dataset.run); if (r) el.textContent = clock((Date.now() - r.t0) / 1000); }); }, 1000);
 setInterval(() => { document.querySelectorAll('[data-timer]').forEach(el => { const t = timerInfo(el.dataset.timer); if (t && t.live) el.textContent = clock((Date.now() - t.start) / 1000); }); }, 1000);
 const topSet = sets => (workSets(sets).length ? workSets(sets) : validSets(sets)).reduce((b, s) => { const v = e1rm(s.w, s.r) ?? (s.r || 0) / 1000; return !b || v > b.v ? { ...s, v } : b; }, null);
@@ -1643,7 +1675,7 @@ const XA = (() => {
     while (changed) { changed = false;
       for (const [x, y, key] of EDGES) {
         if (a[key] == null) continue;
-        const L = LEN[key], ang = rad(fv && key.endsWith('2') ? 180 - a[key] : a[key]);
+        const L = LEN[key] * ((key[0] === 'U' || key[0] === 'F') && a.as != null ? a.as : (key[0] === 'S' || key.slice(0, 2) === 'Th') && a.ls ? a.ls : 1), ang = rad(fv && key.endsWith('2') ? 180 - a[key] : a[key]);
         const ox = (off[y] || 0), v = [Math.cos(ang) * L, Math.sin(ang) * L];
         if (P[x] && !P[y]) { P[y] = [P[x][0] + v[0] + ox, P[x][1] + v[1]]; changed = true; }
         else if (P[y] && !P[x]) { P[x] = [P[y][0] - v[0] - ox, P[y][1] - v[1]]; changed = true; }
@@ -1656,6 +1688,7 @@ const XA = (() => {
   function blend(A, B, u) {
     const o = Object.assign({}, A);
     for (const k in A) if (typeof A[k] === 'number' && typeof B[k] === 'number') o[k] = lerpAng(A[k], B[k], u);
+    if (A.as != null || B.as != null) { const x = A.as == null ? 1 : A.as, y = B.as == null ? 1 : B.as; o.as = x + (y - x) * u; }
     if (B.at) o.at = [A.at[0] + (B.at[0] - A.at[0]) * u, A.at[1] + (B.at[1] - A.at[1]) * u];
     return o;
   }
@@ -1675,24 +1708,56 @@ const XA = (() => {
     if (c === '-') { const [a, b] = k.split(''), A = P[a], B = P[b], dx = B[0] - A[0], dy = B[1] - A[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l * 4.5, ny = dx / l * 4.5;
       const L = s => `<line class="xd" style="stroke-dasharray:none;stroke-width:1.8" x1="${(A[0] + s * nx).toFixed(1)}" y1="${(A[1] + s * ny).toFixed(1)}" x2="${(B[0] + s * nx).toFixed(1)}" y2="${(B[1] + s * ny).toFixed(1)}"/>`; return L(1) + L(-1); }
     if (c === '=') { const [a, b] = k.split(''); return `<line class="xd" x1="4" x2="60" y1="${P[b][1].toFixed(1)}" y2="${P[b][1].toFixed(1)}"/><circle class="xh" cx="${P[a][0].toFixed(1)}" cy="${P[a][1].toFixed(1)}" r="5"/>`; }
-    if (c === '~') { const A = solve(X.A)[k], B = solve(X.B)[k]; return `<line class="xd" x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}"/><circle class="xh" cx="${P[k][0].toFixed(1)}" cy="${P[k][1].toFixed(1)}" r="5.5"/>`; }
+    if (c === '~') { const A = ends(X)[0][k], B = ends(X)[1][k]; return `<line class="xd" x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}"/><circle class="xh" cx="${P[k][0].toFixed(1)}" cy="${P[k][1].toFixed(1)}" r="5.5"/>`; }
     if (P[m]) return `<circle class="xh" cx="${P[m][0].toFixed(1)}" cy="${P[m][1].toFixed(1)}" r="5.5"/><circle class="xhf" cx="${P[m][0].toFixed(1)}" cy="${P[m][1].toFixed(1)}" r="1.5"/>`;
     return '';
   }
+  // Zwei-Gelenk-IK: Hand/Fuß folgt einer geraden Linie (z. B. Hantelweg), Ellbogen/Knie wird berechnet
+  function ik2(S, Tg, L1, L2, side) {
+    const dx = Tg[0] - S[0], dy = Tg[1] - S[1], d = Math.hypot(dx, dy) || 1e-6;
+    const dc = Math.max(Math.abs(L1 - L2) + .05, Math.min(L1 + L2 - .05, d)), ux = dx / d, uy = dy / d;
+    const a = (L1 * L1 - L2 * L2 + dc * dc) / (2 * dc), hh = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+    return [[S[0] + a * ux - side * hh * uy, S[1] + a * uy + side * hh * ux], [S[0] + dc * ux, S[1] + dc * uy]];
+  }
+  const cross = (S, M, E) => (E[0] - S[0]) * (M[1] - S[1]) - (E[1] - S[1]) * (M[0] - S[0]);
+  const CH = { w: ['s', 'e', 'w', 'U', 'F'], f: ['p', 'k', 'f', 'Th', 'Sh'] };
+  function ends(X) { return X._e || (X._e = [X.A, X.B].map(o => { const P = solve(o);
+    if (o.hw) { const q = ik2(P.s, o.hw, LEN.U, LEN.F, cross(P.s, P.e, P.w) > 0 ? 1 : -1); P.e = q[0]; P.w = q[1]; } return P; })); }
+  function pose(X, v) {
+    const P = solve(blend(X.A, X.B, v)); P._v = v;
+    const ikc = X.ik || ((X.A.hw || X.B.hw) ? 'w' : '');
+    if (ikc && !X.A.fv) { const [PA, PB] = ends(X);
+      for (const c of ikc) { const [s, m, e, l1, l2] = CH[c]; if (!P[e]) continue;
+        const cA = cross(PA[s], PA[m], PA[e]), cB = cross(PB[s], PB[m], PB[e]), side = (Math.abs(cB) > Math.abs(cA) ? cB : cA) > 0 ? 1 : -1;
+        const tg = [PA[e][0] + (PB[e][0] - PA[e][0]) * v, PA[e][1] + (PB[e][1] - PA[e][1]) * v];
+        const r = ik2(P[s], tg, LEN[l1], LEN[l2], side); P[m] = r[0]; P[e] = r[1]; } }
+    return P;
+  }
+  const seg2 = (a, b, w, cls) => `<line class="fg${cls || ''}" style="stroke-width:${w}" x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"/>`;
+  const dot = (p, r) => `<circle class="hd" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r}"/>`;
+  function foot(P, k, f, X) {
+    if (X.nf || !P[k] || !P[f]) return '';
+    const a = X.ft != null ? rad(X.ft) : Math.atan2(P[f][1] - P[k][1], P[f][0] - P[k][0]) - Math.PI / 2;
+    return seg2(P[f], [P[f][0] + Math.cos(a) * 4.2, P[f][1] + Math.sin(a) * 4.2], 3);
+  }
+  const leg = (P, k, f, X) => P[k] ? seg2(P.p, P[k], 5.2) + seg2(P[k], P[f], 4.2) + foot(P, k, f, X) : '';
+  const arm = (P, e, w, S) => P[e] ? seg2(S || P.s, P[e], 5.6, ' ol') + seg2(P[e], P[w], 4.9, ' ol') + seg2(S || P.s, P[e], 4.2) + seg2(P[e], P[w], 3.5) + dot(P[w], 2.1) : '';
   function svg(X, v, cue) {
-    const P = solve(blend(X.A, X.B, v)), fv = X.A.fv; P._v = v;
-    let body = '';
-    const limb = (...k) => k.every(n => P[n]) ? `<polyline class="fg" points="${pts(k.map(n => P[n]))}"/>` : '';
+    const P = pose(X, v), fv = X.A.fv;
+    let tool = X.t ? X.t(P) : '', tb = '', tf = '';
+    if (tool && typeof tool === 'object') { tb = tool.b || ''; tf = tool.f || ''; } else if (X.back) tb = tool; else tf = tool || '';
+    const head = seg2(P.s, [P.s[0] + (P.h[0] - P.s[0]) * .55, P.s[1] + (P.h[1] - P.s[1]) * .55], 3.4) + dot(P.h, 4.3);
+    let body;
     if (fv) {
       const sl = [P.s[0] - 5, P.s[1]], sr = [P.s[0] + 5, P.s[1]], pl = [P.p[0] - 3, P.p[1]], pr = [P.p[0] + 3, P.p[1]];
-      body = `<polyline class="fg" points="${pts([sl, sr])}"/><polyline class="fg" points="${pts([pl, pr])}"/>` + limb('p', 's') +
-        (P.k ? `<polyline class="fg" points="${pts([pr, P.k, P.f])}"/>` : '') + (P.k2 ? `<polyline class="fg" points="${pts([pl, P.k2, P.f2])}"/>` : '') +
-        (P.e ? `<polyline class="fg" points="${pts([sr, P.e, P.w])}"/>` : '') + (P.e2 ? `<polyline class="fg" points="${pts([sl, P.e2, P.w2])}"/>` : '');
+      const L = (a, k, f) => P[k] ? seg2(a, P[k], 5) + seg2(P[k], P[f], 4.2) : '';
+      body = L(pr, 'k', 'f') + L(pl, 'k2', 'f2') +
+        `<polygon class="hd fg" style="stroke-width:3.2" points="${pts([sl, sr, pr, pl])}"/>` + head + arm(P, 'e', 'w', sr) + arm(P, 'e2', 'w2', sl);
     } else {
-      body = `<g class="b2">${limb('p', 'k2', 'f2')}${limb('s', 'e2', 'w2')}</g>` + limb('f', 'k', 'p', 's') + limb('s', 'e', 'w');
+      body = `<g class="b2">${leg(P, 'k2', 'f2', X)}${arm(P, 'e2', 'w2')}</g>` + tb + leg(P, 'k', 'f', X) + seg2(P.p, P.s, 7.2) + head + arm(P, 'e', 'w');
+      tb = '';
     }
-    const tool = X.t ? X.t(P) : '';
-    return `<svg viewBox="${X.vb || '0 0 64 62'}" class="xsv">${X.eq || ''}${X.back ? tool : ''}${body}<circle class="hd" cx="${P.h[0].toFixed(1)}" cy="${P.h[1].toFixed(1)}" r="4.4"/>${X.back ? '' : tool}${cue ? mark(cue[3], P, X) : ''}</svg>`;
+    return `<svg viewBox="${X.vb || '0 0 64 62'}" class="xsv">${X.eq || ''}${tb}${body}${tf}${cue ? mark(cue[3], P, X) : ''}</svg>`;
   }
   // ---- Geräte-Bausteine ----
   const f1 = n => (+n).toFixed(1);
@@ -1700,7 +1765,11 @@ const XA = (() => {
     gr: (y = 58) => `<line class="gr" x1="3" y1="${y}" x2="61" y2="${y}"/>`,
     ln: (...p) => `<polyline class="eq" points="${p.map(q => q.map(f1).join(',')).join(' ')}"/>`,
     bench: (x1, x2, y, legs = 1) => G.ln([x1, y], [x2, y]) + (legs ? G.ln([x1 + 4, y], [x1 + 4, 58]) + G.ln([x2 - 4, y], [x2 - 4, 58]) : ''),
-    plate: (p, r = 6) => `<circle class="eq" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r}"/><circle class="eqf" cx="${f1(p[0])}" cy="${f1(p[1])}" r="1.6"/>`,
+    plate: (p, r = 6) => `<circle class="pl" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r}"/>`,
+    hub: p => `<circle class="eqf" cx="${f1(p[0])}" cy="${f1(p[1])}" r="1.5"/>`,
+    dbR: (p, r = 3.1) => `<circle class="pl2" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r}"/>`,
+    dbL: (p, a) => { const c = Math.cos(a) * 4.6, s = Math.sin(a) * 4.6, q = (m, w) => `<line class="eq" style="stroke-width:${w}" x1="${f1(p[0] - c * m)}" y1="${f1(p[1] - s * m)}" x2="${f1(p[0] + c * m)}" y2="${f1(p[1] + s * m)}"/>`;
+      const hd = m => `<line class="eq" style="stroke-width:5.6;stroke-linecap:butt" x1="${f1(p[0] + c * m)}" y1="${f1(p[1] + s * m)}" x2="${f1(p[0] + c * m * 1.45)}" y2="${f1(p[1] + s * m * 1.45)}"/>`; return q(1, 1.6) + hd(.75) + hd(-.75); },
     db: (p, vert) => vert ? `<rect class="eqf" x="${f1(p[0] - 2)}" y="${f1(p[1] - 6)}" width="4" height="12" rx="1.5"/>` : `<rect class="eqf" x="${f1(p[0] - 6)}" y="${f1(p[1] - 2)}" width="12" height="4" rx="1.5"/>`,
     dbE: p => `<rect class="eqf" x="${f1(p[0] - 3.5)}" y="${f1(p[1] - 3.5)}" width="7" height="7" rx="2"/>`,
     cable: (a, b) => `<line class="cb" x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}"/>`,
@@ -1708,7 +1777,7 @@ const XA = (() => {
     pad: (x, y, w, h) => `<rect class="eq" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`,
     post: (x, y1 = 2, y2 = 58) => G.ln([x, y1], [x, y2])
   };
-  return { solve, blend, at, total, svg, G, seg };
+  return { solve, blend, at, total, svg, G, seg, pose };
 })();
 
 const EXA = (() => {
@@ -1718,6 +1787,8 @@ const ST = o => Object.assign({ r: 'f', at: [30, 56], Sh: 90, Th: 90, T: -90, U:
 const SEAT = o => Object.assign({ r: 'p', at: [26, 44], T: -90, Th: 0, Sh: 90 }, o);
 const LIE = o => Object.assign({ r: 'p', at: [36, 42], T: 180, N: 180, Th: 15, Sh: 80 }, o);
 const INC = o => Object.assign({ r: 'p', at: [34, 44], T: -140, Th: 10, Sh: 80 }, o);
+const FV0 = o => Object.assign({ r: 'p', at: [32, 32], fv: 1, T: -90, Th: 90, Sh: 90, Th2: 90, Sh2: 90 }, o);
+const FVS0 = o => Object.assign({ r: 'p', at: [32, 40], fv: 1, ls: .68, T: -90, Th: 92, Sh: 90, Th2: 92, Sh2: 90 }, o);
 const E = {
   gr: XG.gr(),
   flat: XG.gr() + XG.bench(8, 46, 46),
@@ -1726,15 +1797,21 @@ const E = {
   seatB: XG.gr() + XG.ln([15, 46], [34, 46]) + XG.ln([24, 46], [24, 58]) + XG.pad(17, 18, 4, 27),
   tower: x => XG.post(x, 3, 58) + XG.ln([x - 6, 3], [x + 2, 3])
 };
+const FA = P => Math.atan2(P.w[1] - P.e[1], P.w[0] - P.e[0]);
 const T_ = {
-  bar: P => XG.plate(P.w, 6), barS: P => XG.plate(P.w, 4.2), db: P => XG.dbE(P.w) + (P.w2 ? XG.dbE(P.w2) : ''),
-  dbV: P => XG.db(P.w, 1), hd: P => XG.ln([P.w[0], P.w[1] - 3.5], [P.w[0], P.w[1] + 3.5])
+  // Langhantel von der Seite: Scheibe hinter dem Körper, Stangenende vor der Hand
+  bar: P => ({ b: XG.plate(P.w, 6.2), f: XG.hub(P.w) }), barS: P => ({ b: XG.plate(P.w, 4.4), f: XG.hub(P.w) }),
+  // Kurzhantel: von vorn gesehen rund (Ober-/Untergriff) oder längs (neutraler Griff, quer zum Unterarm)
+  db: P => XG.dbR(P.w) + (P.w2 ? XG.dbR(P.w2) : ''),
+  dbV: P => XG.dbL(P.w, FA(P) + Math.PI / 2),
+  dbN: P => XG.dbL(P.w, FA(P) + Math.PI / 2) + (P.w2 ? XG.dbL(P.w2, Math.atan2(P.w2[1] - P.e2[1], P.w2[0] - P.e2[0]) + Math.PI / 2) : ''),
+  hd: P => { const a = FA(P) + Math.PI / 2, c = Math.cos(a) * 3.4, s = Math.sin(a) * 3.4; return XG.ln([P.w[0] - c, P.w[1] - s], [P.w[0] + c, P.w[1] + s]); }
 };
 const cab = (x, y, extra) => P => XG.cable([x, y], P.w) + (extra ? extra(P) : XG.dbE(P.w));
 
 const EXA = {
   benchbb: { eq: E.flat, t: T_.bar,
-    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 60, F: -75 }),
+    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 20, F: -118, hw: [24.5, 36.4] }),
     c: [['s', 'Schulterblätter zusammen, Brust raus', 'Squeeze shoulder blades, chest up', 's'],
         ['s', 'Füße fest am Boden, Po bleibt auf der Bank', 'Feet planted, glutes stay on the bench', 'f'],
         ['1', 'Stange langsam zur unteren Brust senken', 'Lower the bar slowly to the lower chest', '~w'],
@@ -1742,35 +1819,35 @@ const EXA = {
         ['2', 'Kraftvoll hochdrücken, dabei ausatmen', 'Press up powerfully, breathe out', '~w']],
     g: ['Griff etwas breiter als schulterbreit – unten stehen die Unterarme senkrecht. Füße hüftbreit fest am Boden.', 'Grip slightly wider than shoulder-width – forearms vertical at the bottom. Feet hip-width, planted.'] },
   benchdb: { eq: E.flat, t: T_.db,
-    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 55, F: -80 }),
+    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 20, F: -118, hw: [22.5, 37.6] }),
     c: [['s', 'Hanteln über der Brust, Schulterblätter zusammen', 'Dumbbells over the chest, shoulder blades back', 's'],
         ['1', 'Langsam seitlich neben die Brust senken', 'Lower slowly beside the chest', '~w'],
         ['u', 'Ellbogen leicht unter Bankhöhe, nicht tiefer', 'Elbows just below bench level, no lower', 'e'],
         ['2', 'Im leichten Bogen nach oben zusammendrücken', 'Press up and together in a slight arc', '~w']],
     g: ['Handflächen zeigen Richtung Füße, Hanteln etwa schulterbreit. Füße hüftbreit am Boden.', 'Palms face your feet, dumbbells about shoulder-width. Feet hip-width on the floor.'] },
   closebench: { eq: E.flat, t: T_.bar,
-    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 45, F: -95 }),
+    A: LIE({ U: -88, F: -90 }), B: LIE({ U: 20, F: -118, hw: [26, 36.4] }),
     c: [['s', 'Schulterblätter zusammen, Füße fest', 'Shoulder blades back, feet planted', 's'],
         ['1', 'Stange zur unteren Brust senken', 'Lower the bar to the lower chest', '~w'],
         ['u', 'Ellbogen eng am Körper lassen', 'Keep elbows close to the body', 'e'],
         ['2', 'Hochdrücken – die Kraft kommt aus dem Trizeps', 'Press up – drive with the triceps', '~w']],
     g: ['Griff schulterbreit (nicht enger, das belastet die Handgelenke). Füße hüftbreit.', 'Grip shoulder-width (not narrower – it strains the wrists). Feet hip-width.'] },
   declinebench: { eq: XG.gr() + XG.ln([12, 47], [46, 41]) + XG.ln([20, 46], [20, 58]) + XG.ln([40, 42], [40, 58]) + XG.plate([56, 42], 2.5), t: T_.bar,
-    A: { r: 'p', at: [38, 38], T: 165, N: 165, Th: -30, Sh: 60, U: -88, F: -90 }, B: { r: 'p', at: [38, 38], T: 165, N: 165, Th: -30, Sh: 60, U: 55, F: -80 },
+    A: { r: 'p', at: [38, 38], T: 165, N: 165, Th: -30, Sh: 60, U: -88, F: -90 }, B: { r: 'p', at: [38, 38], T: 165, N: 165, Th: -30, Sh: 60, U: 20, F: -118, hw: [27.5, 35.4] },
     c: [['s', 'Beine fest einhaken, Schulterblätter zusammen', 'Hook your legs, shoulder blades back', 'f'],
         ['1', 'Stange langsam zur unteren Brust', 'Lower the bar slowly to the lower chest', '~w'],
         ['u', 'Kurz Spannung halten, nicht abfedern', 'Pause briefly, don\'t bounce', 'e'],
         ['2', 'Senkrecht nach oben drücken', 'Press straight up', '~w']],
     g: ['Griff etwas breiter als schulterbreit. Beine unter den Polstern fixiert.', 'Grip slightly wider than shoulder-width. Legs locked under the pads.'] },
   inclinebb: { eq: E.inc, t: T_.bar,
-    A: INC({ U: -88, F: -90 }), B: INC({ U: 95, F: -60 }),
+    A: INC({ U: -88, F: -90 }), B: INC({ U: 60, F: -100, hw: [28, 31.2] }),
     c: [['s', 'Bank auf 30–45°, Schulterblätter zusammen', 'Bench at 30–45°, shoulder blades back', 's'],
         ['1', 'Stange zur oberen Brust senken', 'Lower the bar to the upper chest', '~w'],
         ['u', 'Ellbogen etwa 45° vom Körper', 'Elbows about 45° from the body', 'e'],
         ['2', 'Senkrecht nach oben drücken, nicht nach vorn', 'Press straight up, not forward', '~w']],
     g: ['Griff etwas breiter als schulterbreit. Füße hüftbreit fest am Boden.', 'Grip slightly wider than shoulder-width. Feet hip-width, planted.'] },
   inclinedb: { eq: E.inc, t: T_.db,
-    A: INC({ U: -88, F: -90 }), B: INC({ U: 95, F: -65 }),
+    A: INC({ U: -88, F: -90 }), B: INC({ U: 60, F: -100, hw: [26.5, 32.6] }),
     c: [['s', 'Bank auf 30–45°, Hanteln über der Brust', 'Bench at 30–45°, dumbbells over the chest', 'w'],
         ['1', 'Langsam neben die obere Brust senken', 'Lower slowly beside the upper chest', '~w'],
         ['u', 'Dehnung in der Brust spüren', 'Feel the stretch in the chest', 's'],
@@ -1790,50 +1867,50 @@ const EXA = {
         ['u', 'Schultern unten lassen', 'Keep the shoulders down', 's'],
         ['2', 'Langsam zurückführen', 'Return slowly', '~w']],
     g: ['Griffe schulterbreit. Rücken und Kopf am Polster, Füße flach am Boden.', 'Handles shoulder-width. Back and head on the pad, feet flat on the floor.'] },
-  fly: { eq: E.seatB, t: T_.hd, o: 1,
-    A: SEAT({ U: 178, F: -90 }), B: SEAT({ U: 0, F: -90 }),
+  fly: { eq: XG.gr() + XG.ln([20, 42], [44, 42]) + XG.pad(24, 14, 16, 26), o: 1,
+    A: FVS0({ U: 0, F: -90, U2: 0, F2: -90 }), B: FVS0({ U: 10, F: -90, U2: 10, F2: -90, as: .3 }),
     c: [['s', 'Rücken am Polster, Ellbogen leicht gebeugt', 'Back on the pad, elbows slightly bent', 'e'],
         ['1', 'Arme im Bogen vor der Brust zusammenführen', 'Bring the arms together in an arc', '~w'],
         ['u', 'Brust 1 Sekunde fest anspannen', 'Squeeze the chest for 1 second', 's'],
         ['2', 'Langsam öffnen bis zur leichten Dehnung', 'Open slowly to a light stretch', '~w']],
     g: ['Griffe bzw. Polster auf Schulterhöhe, Sitz entsprechend einstellen. Füße flach am Boden.', 'Handles or pads at shoulder height – adjust the seat. Feet flat on the floor.'] },
-  cablefly: { eq: XG.gr() + E.tower(8), t: cab(8, 6), o: 1,
-    A: ST({ T: -75, Th2: 115, Sh2: 100, U: 175, F: -170 }), B: ST({ T: -75, Th2: 115, Sh2: 100, U: 25, F: 35 }),
+  cablefly: { eq: XG.gr() + XG.post(6, 4, 58) + XG.post(58, 4, 58), t: P => XG.cable([58, 6], P.w) + XG.cable([6, 6], P.w2), o: 1,
+    A: FV0({ U: -22, F: -30, U2: -22, F2: -30 }), B: FV0({ U: 72, F: 122, U2: 72, F2: 122 }),
     c: [['s', 'Schrittstellung, Oberkörper leicht nach vorn', 'Staggered stance, lean forward slightly', 'f'],
         ['1', 'Griffe im Bogen vor der Brust zusammen', 'Bring the handles together in an arc', '~w'],
         ['u', 'Ellbogen bleiben leicht gebeugt', 'Elbows stay slightly bent', 'e'],
         ['2', 'Langsam öffnen, Brust bleibt gespannt', 'Open slowly, keep the chest tight', '~w']],
     g: ['Seilzüge oben, Schrittstellung etwa schulterbreit. Griffe mit Handflächen nach unten/innen.', 'Pulleys high, staggered stance about shoulder-width. Palms down/inwards.'] },
-  cablelowfly: { eq: XG.gr() + E.tower(8), t: cab(8, 54), o: 1,
-    A: ST({ T: -82, Th2: 110, Sh2: 95, U: 140, F: 150 }), B: ST({ T: -82, Th2: 110, Sh2: 95, U: -25, F: -35 }),
+  cablelowfly: { eq: XG.gr() + XG.post(6, 4, 58) + XG.post(58, 4, 58), t: P => XG.cable([58, 56], P.w) + XG.cable([6, 56], P.w2), o: 1,
+    A: FV0({ U: 55, F: 50, U2: 55, F2: 50 }), B: FV0({ U: 40, F: -155, U2: 40, F2: -155, as: .6 }),
     c: [['s', 'Seilzüge unten, aufrecht in Schrittstellung', 'Pulleys low, upright staggered stance', 'f'],
         ['1', 'Im Bogen nach oben vor die Brust', 'Arc up to chest height', '~w'],
         ['u', 'Oben die obere Brust anspannen', 'Squeeze the upper chest at the top', 's'],
         ['2', 'Langsam nach unten öffnen', 'Lower slowly', '~w']],
     g: ['Seilzüge ganz unten, Handflächen zeigen nach vorn/oben. Schrittstellung schulterbreit.', 'Pulleys at the bottom, palms facing forward/up. Staggered stance shoulder-width.'] },
   dbfly: { eq: E.flat, t: T_.db,
-    A: LIE({ U: -90, F: -85 }), B: LIE({ U: 100, F: 95 }),
+    A: LIE({ U: -90, F: -88 }), B: LIE({ U: -90, F: -70, as: .22 }),
     c: [['s', 'Hanteln über der Brust, Ellbogen leicht gebeugt', 'Dumbbells over the chest, elbows slightly bent', 'e'],
         ['1', 'Arme weit seitlich öffnen – langsam', 'Open the arms wide to the sides – slowly', '~w'],
         ['u', 'Nur bis zur Dehnung, nicht tiefer', 'Only to a stretch, no lower', 's'],
         ['2', 'Im Bogen über der Brust zusammenführen', 'Bring together over the chest in an arc', '~w']],
     g: ['Handflächen zeigen zueinander. Füße hüftbreit fest am Boden.', 'Palms face each other. Feet hip-width, planted.'] },
   inclinedbfly: { eq: E.inc, t: T_.db,
-    A: INC({ U: -90, F: -85 }), B: INC({ U: 125, F: 120 }),
+    A: INC({ U: -90, F: -88 }), B: INC({ U: -90, F: -70, as: .22 }),
     c: [['s', 'Bank auf ca. 30°, Hanteln über der Brust', 'Bench at about 30°, dumbbells over the chest', 'w'],
         ['1', 'Langsam seitlich öffnen', 'Open slowly to the sides', '~w'],
         ['u', 'Ellbogen bleiben leicht gebeugt', 'Elbows stay slightly bent', 'e'],
         ['2', 'Oben zusammenführen, Brust anspannen', 'Bring together at the top, squeeze', '~w']],
     g: ['Handflächen zueinander. Füße hüftbreit am Boden.', 'Palms face each other. Feet hip-width on the floor.'] },
-  dips: { eq: XG.gr() + XG.ln([18, 30], [46, 30]) + XG.ln([22, 30], [22, 58]) + XG.ln([42, 30], [42, 58]),
-    A: { r: 'w', at: [32, 30], F: 90, U: 90, T: -80, Th: 100, Sh: 160 }, B: { r: 'w', at: [32, 30], F: 65, U: 180, T: -55, Th: 110, Sh: 170 },
+  dips: { ft: 150, eq: XG.gr() + XG.ln([18, 30], [46, 30]) + XG.ln([22, 30], [22, 58]) + XG.ln([42, 30], [42, 58]),
+    A: { r: 'w', at: [32, 30], F: 90, U: 90, T: -80, Th: 100, Sh: 160 }, B: { r: 'w', at: [32, 30], F: 16, U: 131, T: -62, Th: 110, Sh: 170 },
     c: [['s', 'Arme gestreckt, Oberkörper leicht vorgeneigt', 'Arms straight, torso leaning slightly forward', '-sp'],
         ['1', 'Langsam absenken', 'Lower slowly', 's'],
         ['u', 'Bis die Oberarme etwa waagerecht sind', 'Until upper arms are about parallel', 'e'],
         ['2', 'Kraftvoll hochdrücken', 'Press up powerfully', 's']],
     g: ['Griffe etwa schulterbreit, Ellbogen zeigen nach hinten. Beine gekreuzt oder angewinkelt.', 'Grips about shoulder-width, elbows point back. Legs crossed or bent.'] },
-  pushup: { eq: XG.gr(),
-    A: { r: 'w', at: [16, 56], F: 90, U: 90, T: -153, N: -165, Th: 27, Sh: 27 }, B: { r: 'w', at: [16, 56], F: 110, U: -20, T: -173, N: -178, Th: 7, Sh: 7 },
+  pushup: { ft: 75, eq: XG.gr(),
+    A: { r: 'w', at: [19, 56], F: 90, U: 90, T: -153, N: -165, Th: 27, Sh: 27 }, B: { r: 'w', at: [19, 56], F: 158, U: 6, T: -174, N: -178, Th: 6, Sh: 6 },
     c: [['s', 'Körper eine gerade Linie, Bauch fest', 'Body in a straight line, abs tight', '-sp'],
         ['1', 'Brust langsam Richtung Boden', 'Lower the chest slowly to the floor', 's'],
         ['u', 'Ellbogen ca. 45° vom Körper', 'Elbows about 45° from the body', 'e'],
@@ -1885,36 +1962,36 @@ const EXA = {
         ['u', 'Hände auseinander, hintere Schulter anspannen', 'Hands apart, squeeze the rear delts', 's'],
         ['2', 'Langsam zurück', 'Return slowly', '~w']],
     g: ['Seil mit Daumen nach hinten greifen. Füße hüftbreit, ein Schritt vom Turm weg.', 'Grip the rope with thumbs pointing back. Feet hip-width, a step away from the tower.'] },
-  deadlift: { eq: E.gr, t: P => XG.plate(P.w, 6), o: 1,
-    A: ST({ at: [30, 56], Sh: 100, Th: 20, T: -30, U: 95, F: 92 }), B: ST({ at: [30, 56], U: 92, F: 90 }),
+  deadlift: { eq: E.gr, t: T_.bar, o: 1,
+    A: ST({ at: [30, 56], Sh: 100, Th: 20, T: -30, U: 95, F: 92 }), B: ST({ at: [30, 56], U: 80, F: 84 }),
     c: [['s', 'Stange dicht am Schienbein, Rücken gerade', 'Bar close to the shins, back straight', '-sp'],
         ['1', 'Mit den Beinen vom Boden drücken', 'Push the floor away with your legs', 'k'],
         ['1', 'Stange bleibt dicht am Körper', 'Keep the bar close to the body', '~w'],
         ['u', 'Oben Hüfte strecken, nicht überstrecken', 'Lock out the hips, don\'t lean back', 'p'],
         ['2', 'Kontrolliert ablegen, Rücken bleibt gerade', 'Lower under control, back stays straight', '-sp']],
     g: ['Füße hüftbreit, Griff knapp außerhalb der Beine (Ober- oder Wechselgriff).', 'Feet hip-width, grip just outside the legs (overhand or mixed).'] },
-  sumodl: { eq: E.gr, t: P => XG.plate(P.w, 6), o: 1,
-    A: ST({ at: [30, 56], Sh: 95, Th: 30, T: -45, U: 92, F: 90 }), B: ST({ at: [30, 56], U: 92, F: 90 }),
+  sumodl: { eq: E.gr, t: T_.bar, o: 1,
+    A: ST({ at: [30, 56], Sh: 95, Th: 30, T: -45, U: 92, F: 90 }), B: ST({ at: [30, 56], U: 80, F: 84 }),
     c: [['s', 'Breiter Stand, Fußspitzen nach außen', 'Wide stance, toes pointing out', 'f'],
         ['1', 'Knie nach außen drücken und hochkommen', 'Push the knees out and stand up', 'k'],
         ['u', 'Oben Hüfte strecken, Gesäß anspannen', 'Lock out the hips, squeeze the glutes', 'p'],
         ['2', 'Kontrolliert ablegen', 'Lower under control', '~w']],
     g: ['Füße deutlich breiter als schulterbreit, Zehen 30–45° nach außen. Griff schulterbreit innerhalb der Beine.', 'Feet well wider than shoulder-width, toes out 30–45°. Grip shoulder-width inside the legs.'] },
-  rackpull: { eq: XG.gr() + XG.post(46, 12, 58) + XG.ln([40, 40], [46, 40]), t: P => XG.plate(P.w, 6), o: 1,
-    A: ST({ at: [30, 56], Sh: 95, Th: 60, T: -50, U: 92, F: 90 }), B: ST({ at: [30, 56], U: 92, F: 90 }),
+  rackpull: { eq: XG.gr() + XG.post(46, 12, 58) + XG.ln([40, 40], [46, 40]), t: T_.bar, o: 1,
+    A: ST({ at: [30, 56], Sh: 95, Th: 60, T: -50, U: 92, F: 90 }), B: ST({ at: [30, 56], U: 80, F: 84 }),
     c: [['s', 'Stange auf Kniehöhe in der Ablage', 'Bar at knee height on the pins', 'w'],
         ['1', 'Hüfte nach vorn schieben und aufrichten', 'Drive the hips forward and stand up', 'p'],
         ['u', 'Schultern zurück, kurz halten', 'Shoulders back, hold briefly', 's'],
         ['2', 'Kontrolliert zurück, Rücken gerade', 'Lower under control, back straight', '-sp']],
     g: ['Füße hüftbreit, Obergriff knapp außerhalb der Beine.', 'Feet hip-width, overhand grip just outside the legs.'] },
-  goodmorning: { eq: E.gr, t: P => XG.plate([P.s[0] - 1, P.s[1] - 1], 5),
+  goodmorning: { eq: E.gr, t: P => ({ b: XG.plate([P.s[0] - 1.5, P.s[1] - 2.5], 5.6), f: XG.hub([P.s[0] - 1.5, P.s[1] - 2.5]) }),
     A: ST({ Sh: 95, U: 110, F: -80 }), B: ST({ Sh: 98, Th: 98, T: -12, U: 190, F: 20 }),
     c: [['s', 'Stange auf dem oberen Rücken, Knie leicht gebeugt', 'Bar on the upper back, knees soft', 'k'],
         ['1', 'Hüfte nach hinten schieben, Rücken gerade', 'Push the hips back, back straight', '-sp'],
         ['u', 'Bis Oberkörper fast waagerecht', 'Until the torso is almost horizontal', 'p'],
         ['2', 'Über die Hüfte aufrichten', 'Stand up by extending the hips', 'p']],
     g: ['Füße hüftbreit. Stange wie bei der Kniebeuge, Griff etwas breiter als schulterbreit.', 'Feet hip-width. Bar as for squats, grip slightly wider than shoulders.'] },
-  rdl: { eq: E.gr, t: P => XG.plate(P.w, 6),
+  rdl: { eq: E.gr, t: T_.bar,
     A: ST({ Sh: 95, U: 92, F: 90 }), B: ST({ Sh: 100, Th: 100, T: -18, U: 92, F: 90 }),
     c: [['s', 'Knie leicht gebeugt, Rücken gerade', 'Knees slightly bent, back straight', 'k'],
         ['1', 'Hüfte nach hinten, Stange an den Beinen entlang', 'Hips back, bar slides down the legs', '~w'],
@@ -1935,8 +2012,8 @@ const EXA = {
         ['u', 'Kinn über die Stange', 'Chin over the bar', 'h'],
         ['2', 'Langsam ganz ablassen', 'Lower slowly all the way', 'e']],
     g: ['Obergriff etwas breiter als schulterbreit. Beine angewinkelt oder gekreuzt, nicht schwingen.', 'Overhand grip slightly wider than shoulder-width. Legs bent or crossed, no swinging.'] },
-  dbrow: { eq: XG.gr() + XG.bench(44, 62, 47), t: T_.db, o: 1,
-    A: { r: 'f', at: [40, 56], Sh: 95, Th: 80, T: -8, N: -8, U: 90, F: 90, U2: 90, F2: 90 }, B: { r: 'f', at: [40, 56], Sh: 95, Th: 80, T: -8, N: -8, U: 235, F: 95, U2: 90, F2: 90 },
+  dbrow: { vb: '8 0 66 62', eq: XG.gr() + XG.bench(44, 66, 47), t: T_.dbV, o: 1,
+    A: { r: 'f', at: [40, 56], Sh: 95, Th: 80, T: -8, N: -8, U: 90, F: 90, U2: 90, F2: 90 }, B: { r: 'f', at: [40, 56], Sh: 95, Th: 80, T: -8, N: -8, U: 198, F: 78, U2: 90, F2: 90 },
     c: [['s', 'Knie und Hand auf der Bank, Rücken gerade', 'Knee and hand on the bench, back flat', '-sp'],
         ['1', 'Hantel zur Hüfte ziehen', 'Pull the dumbbell to the hip', '~w'],
         ['u', 'Ellbogen nah am Körper, oben halten', 'Elbow close to the body, hold at the top', 'e'],
@@ -1975,7 +2052,7 @@ Object.assign(EXA, {
 
 /* ---- Übungsdaten: Schultern, Arme, Beine, Bauch ---- */
 const FV = o => Object.assign({ r: 'p', at: [32, 32], fv: 1, T: -90, Th: 90, Sh: 90, Th2: 90, Sh2: 90, U: 95, F: 90, U2: 95, F2: 90 }, o);
-const FVS = o => Object.assign({ r: 'p', at: [32, 40], fv: 1, T: -90, Th: 92, Sh: 90, Th2: 92, Sh2: 90, U: 95, F: 90, U2: 95, F2: 90 }, o);
+const FVS = o => Object.assign({ r: 'p', at: [32, 40], fv: 1, ls: .68, T: -90, Th: 92, Sh: 90, Th2: 92, Sh2: 90, U: 95, F: 90, U2: 95, F2: 90 }, o);
 const LIEF = o => Object.assign({ r: 'p', at: [34, 55], T: 180, N: 180, Th: -45, Sh: 60, U: 10, F: 0 }, o);
 const curlCue = (de, en) => [['s', 'Ellbogen fest seitlich am Körper', 'Elbows fixed at your sides', 'e'],
   ['1', de || 'Ohne Schwung nach oben beugen', en || 'Curl up without swinging', '~w'],
@@ -2029,8 +2106,8 @@ Object.assign(EXA, {
         ['u', 'Oben kurz halten, Rumpf stabil', 'Hold briefly, torso stable', '-sp'],
         ['2', 'Langsam senken', 'Lower slowly', '~w']],
     g: ['Handflächen nach unten, Hanteln schulterbreit. Füße hüftbreit.', 'Palms down, dumbbells shoulder-width. Feet hip-width.'] },
-  reversefly: { eq: E.seat + XG.pad(38, 20, 4, 16), t: T_.hd, o: 1,
-    A: SEAT({ U: 2, F: 0 }), B: SEAT({ U: 178, F: 180 }),
+  reversefly: { eq: XG.gr() + XG.ln([20, 42], [44, 42]), o: 1,
+    A: FVS0({ U: 8, F: 0, U2: 8, F2: 0, as: .14 }), B: FVS0({ U: -4, F: -4, U2: -4, F2: -4, as: 1 }),
     c: [['s', 'Brust am Polster, Arme gestreckt vor dir', 'Chest on the pad, arms straight in front', 's'],
         ['1', 'Arme im Bogen weit nach hinten führen', 'Move the arms back in a wide arc', '~w'],
         ['u', 'Schulterblätter zusammendrücken', 'Squeeze the shoulder blades', 's'],
@@ -2097,14 +2174,14 @@ Object.assign(EXA, {
   tricepsmachine: { eq: E.seatB + XG.ln([28, 38], [36, 38]), t: T_.hd, o: 1, A: SEAT({ U: 70, F: -60 }), B: SEAT({ U: 70, F: 70 }), c: pushCue,
     g: ['Ellbogen auf dem Polster, auf Höhe der Drehachse. Neutraler Griff.', 'Elbows on the pad, lined up with the pivot. Neutral grip.'] },
   skull: { eq: E.flat, t: T_.barS,
-    A: LIE({ U: -100, F: -100 }), B: LIE({ U: -105, F: 165 }),
+    A: LIE({ U: -100, F: -100 }), B: LIE({ U: -105, F: -195 }),
     c: [['s', 'Stange über der Brust, Oberarme senkrecht', 'Bar over the chest, upper arms vertical', 'e'],
         ['1', 'Nur die Unterarme Richtung Stirn beugen', 'Bend only the forearms towards the forehead', '~w'],
         ['u', 'Ellbogen zeigen zur Decke', 'Elbows point to the ceiling', 'e'],
         ['2', 'Mit dem Trizeps zurück strecken', 'Extend back with the triceps', '~w']],
     g: ['SZ-Stange im schrägen Obergriff, Hände etwa 15–20 cm auseinander. Füße am Boden.', 'EZ bar, angled overhand grip, hands about 15–20 cm apart. Feet on the floor.'] },
   overheadtri: { eq: E.gr, t: T_.dbV, vb: '-6 -10 76 72',
-    A: ST({ U: -100, F: -95 }), B: ST({ U: -100, F: 100 }),
+    A: ST({ U: -100, F: -95 }), B: ST({ U: -100, F: -260 }),
     c: [['s', 'Hantel mit beiden Händen über dem Kopf', 'Dumbbell in both hands overhead', 'w'],
         ['1', 'Hinter den Kopf absenken', 'Lower behind the head', '~w'],
         ['u', 'Ellbogen zeigen nach vorn, eng am Kopf', 'Elbows point forward, close to the head', 'e'],
@@ -2118,7 +2195,7 @@ Object.assign(EXA, {
         ['2', 'Langsam zurück, Oberarm bleibt still', 'Return slowly, upper arm stays still', 'e']],
     g: ['Neutraler Griff (Handfläche zum Körper). Füße hüftbreit oder Knie auf der Bank.', 'Neutral grip (palm facing you). Feet hip-width or knee on a bench.'] },
   benchdip: { eq: XG.gr() + XG.bench(6, 24, 40),
-    A: { r: 'w', at: [20, 40], F: 90, U: 90, T: -95, Th: 30, Sh: 55 }, B: { r: 'w', at: [20, 40], F: 60, U: -145, T: -95, Th: -5, Sh: 25 },
+    A: { r: 'w', at: [20, 40], F: 90, U: 90, T: -95, Th: 30, Sh: 55 }, B: { r: 'w', at: [20, 40], F: 60, U: 215, T: -95, Th: -5, Sh: 25 },
     c: [['s', 'Hände hinter dir auf der Bank, Arme gestreckt', 'Hands on the bench behind you, arms straight', 'w'],
         ['1', 'Langsam absenken, Rücken nah an der Bank', 'Lower slowly, back close to the bench', 's'],
         ['u', 'Bis die Ellbogen etwa 90° haben', 'Until the elbows reach about 90°', 'e'],
@@ -2126,10 +2203,10 @@ Object.assign(EXA, {
     g: ['Hände schulterbreit, Finger nach vorn. Beine angewinkelt (leichter) oder gestreckt (schwerer).', 'Hands shoulder-width, fingers forward. Legs bent (easier) or straight (harder).'] },
 
   /* ---- Beine ---- */
-  squat: { eq: E.gr, t: P => XG.plate(P.w, 5),
+  squat: { eq: E.gr, t: P => ({ b: XG.plate(P.w, 5.6), f: XG.hub(P.w) }),
     A: ST({ at: [32, 56], U: 110, F: -80 }), B: ST({ at: [32, 56], Sh: 110, Th: 0, T: -55, U: 145, F: -45 }), c: SQUAT_C,
     g: ['Füße schulterbreit, Zehen leicht nach außen. Stange auf dem oberen Rücken, Griff etwas breiter als schulterbreit.', 'Feet shoulder-width, toes slightly out. Bar on the upper back, grip slightly wider than shoulders.'] },
-  frontsquat: { eq: E.gr, t: P => XG.plate(P.w, 5),
+  frontsquat: { eq: E.gr, t: P => ({ b: XG.plate(P.w, 5.6), f: XG.hub(P.w) }),
     A: ST({ at: [32, 56], U: -10, F: 170 }), B: ST({ at: [32, 56], Sh: 115, Th: 0, T: -70, U: 10, F: 190 }),
     c: [['s', 'Stange vorn auf den Schultern, Ellbogen hoch', 'Bar on the front of the shoulders, elbows high', 'e'],
         ['1', 'Tief und aufrecht absenken', 'Squat deep and upright', '-sp'],
@@ -2150,7 +2227,7 @@ Object.assign(EXA, {
         ['u', 'Knie zeigen in Richtung Zehen', 'Knees point towards the toes', 'k'],
         ['2', 'Über die ganze Sohle hochdrücken', 'Press up through the whole foot', 'f']],
     g: ['Füße schulterbreit mittig auf der Plattform, Zehen leicht nach außen.', 'Feet shoulder-width in the middle of the platform, toes slightly out.'] },
-  legpress: { eq: XG.gr() + XG.ln([6, 30], [18, 48]) + XG.ln([12, 50], [28, 50]) + XG.ln([30, 44], [58, 18]),
+  legpress: { vb: '-7 0 71 62', eq: XG.gr() + XG.ln([6, 30], [18, 48]) + XG.ln([12, 50], [28, 50]) + XG.ln([30, 44], [58, 18]),
     t: P => XG.ln([P.f[0] - 4, P.f[1] - 5], [P.f[0] + 4, P.f[1] + 5]),
     A: { r: 'p', at: [20, 46], T: -148, Th: -40, Sh: -40, U: 60, F: 0 }, B: { r: 'p', at: [20, 46], T: -148, Th: -82, Sh: 15, U: 60, F: 0 },
     c: [['s', 'Rücken und Po fest im Sitz', 'Back and glutes firmly in the seat', 'p'],
@@ -2158,7 +2235,7 @@ Object.assign(EXA, {
         ['u', 'Po hebt nicht ab', 'Don\'t let the glutes lift', 'p'],
         ['2', 'Hochdrücken, Knie nicht durchstrecken', 'Press up, don\'t lock the knees', 'f']],
     g: ['Füße schulterbreit mittig auf der Platte, Zehen leicht nach außen.', 'Feet shoulder-width in the middle of the plate, toes slightly out.'] },
-  presscalf: { eq: XG.gr() + XG.ln([6, 30], [18, 48]) + XG.ln([12, 50], [28, 50]) + XG.ln([30, 44], [58, 18]),
+  presscalf: { vb: '-7 0 71 62', eq: XG.gr() + XG.ln([6, 30], [18, 48]) + XG.ln([12, 50], [28, 50]) + XG.ln([30, 44], [58, 18]),
     t: P => { const a = (-40 + 90 - P._v * 18) * Math.PI / 180, c = [P.f[0] + 2, P.f[1] - 1]; return XG.ln([c[0] - 6 * Math.cos(a), c[1] - 6 * Math.sin(a)], [c[0] + 6 * Math.cos(a), c[1] + 6 * Math.sin(a)]); }, o: 1,
     A: { r: 'p', at: [20, 46], T: -148, Th: -40, Sh: -40, U: 60, F: 0 }, B: { r: 'p', at: [20, 46], T: -148, Th: -40, Sh: -40, U: 60, F: 0 },
     c: [['s', 'Fußballen an der Plattform-Unterkante, Beine gestreckt', 'Balls of the feet on the lower edge, legs straight', 'f'],
@@ -2222,8 +2299,8 @@ Object.assign(EXA, {
         ['u', 'Oben kurz halten', 'Hold briefly at the top', 'f'],
         ['2', 'Langsam tief absenken', 'Lower slowly and deep', 'f']],
     g: ['Füße hüftbreit, Zehen gerade nach vorn. Knie im 90°-Winkel.', 'Feet hip-width, toes straight ahead. Knees at 90°.'] },
-  hipthrust: { eq: XG.gr() + XG.bench(2, 18, 42), t: P => XG.plate([P.p[0], P.p[1] - 6], 5), o: 1,
-    A: { r: 's', at: [16, 39], T: -150, N: 180, Th: -12, Sh: 95, U: 30, F: -20 }, B: { r: 's', at: [16, 39], T: -182, N: 180, Th: 8, Sh: 100, U: 30, F: -20 },
+  hipthrust: { eq: XG.gr() + XG.bench(2, 18, 42), t: P => ({ b: XG.plate([P.p[0] + 1, P.p[1] - 5.5], 5.6), f: XG.hub([P.p[0] + 1, P.p[1] - 5.5]) }), o: 1,
+    A: { r: 's', at: [16, 39], T: -150, N: 180, Th: -12, Sh: 95, U: 60, F: -30, hw: [31.7, 42] }, B: { r: 's', at: [16, 39], T: -182, N: 180, Th: 8, Sh: 100, U: 30, F: -40, hw: [34, 33] },
     c: [['s', 'Schulterblätter auf der Bankkante', 'Shoulder blades on the edge of the bench', 's'],
         ['1', 'Hüfte nach oben drücken', 'Drive the hips up', 'p'],
         ['u', 'Körper gerade, Po fest anspannen', 'Body straight, squeeze the glutes', '-sp'],
@@ -2329,7 +2406,7 @@ Object.assign(EXA, {
         ['u', 'Körper eine gerade Linie', 'Body in a straight line', '-sp'],
         ['2', 'Ruhig atmen, dann Seite wechseln', 'Breathe calmly, then switch sides', 'h']],
     g: ['Füße übereinander (leichter: versetzt). Freie Hand an der Hüfte oder nach oben.', 'Feet stacked (easier: staggered). Free hand on the hip or up.'] },
-  abroller: { eq: E.gr, vb: '-2 0 76 62', t: P => `<circle class="eq" cx="${P.w[0].toFixed(1)}" cy="${P.w[1].toFixed(1)}" r="3.5"/>`,
+  abroller: { eq: E.gr, vb: '-9 0 82 62', t: P => `<circle class="eq" cx="${P.w[0].toFixed(1)}" cy="${P.w[1].toFixed(1)}" r="3.5"/>`,
     A: { r: 'k', at: [12, 55], Sh: 180, Th: 90, T: -55, U: 72, F: 75 }, B: { r: 'k', at: [12, 55], Sh: 180, Th: 160, T: -12, U: 10, F: 12 },
     c: [['s', 'Kniend, Rolle unter den Schultern', 'Kneeling, wheel under the shoulders', 'w'],
         ['1', 'Langsam nach vorn rollen', 'Roll forward slowly', '~w'],
@@ -2361,6 +2438,11 @@ Object.assign(EXA, {
     g: ['Füße schulterbreit, etwas vor der Stange. Griff etwas breiter als schulterbreit.', 'Feet shoulder-width, slightly in front of the bar. Grip slightly wider than shoulders.'] }),
   walklunge: Object.assign({}, EXA.lunge, { g: ['Schritte etwa hüftbreit versetzt, abwechselnd links/rechts.', 'Steps about hip-width offset, alternating left/right.'] })
 });
+
+// gerader Hantel-/Griffweg (Hand bzw. Fuß folgt einer Linie, Ellbogen/Knie ergibt sich)
+['benchbb','benchdb','closebench','declinebench','inclinebb','inclinedb','chestpress','inclinechestpress','smithbench','latpull','latnarrow','latunder','latone',
+ 'cablerow','machinerow','dbrow','tbarrow','ohp','ohpdb','arnold','smithohp','shoulderpress','uprightrow','facepull'].forEach(id => { if (EXA[id]) EXA[id].ik = 'w'; });
+['legpress'].forEach(id => { EXA[id].ik = 'f'; });
 
 return EXA;
 })();
@@ -2627,13 +2709,21 @@ document.addEventListener('input', ev => {
   if (ev.target.dataset.rin === 'name') { const r = routineById(S.redit); if (r) { r.name = ev.target.value; saveRoutinesSoon(); } return; }
   const el = ev.target; if (!el.dataset.in || !S.ex) return;
   const e = getEntry(S.day, S.ex, true), s = e.sets[+el.dataset.i]; if (!s) return;
-  s[el.dataset.in] = num(el.value);
+  s[el.dataset.in] = cleanIn(el.dataset.in, el.value);
   if (s[el.dataset.in] != null) touchDay(S.day);
   Store.saveDay(S.day);
   const g = document.getElementById('goal-' + el.dataset.i);
   if (g) { const tw = g.dataset.tw === '' ? null : +g.dataset.tw, tr = +g.dataset.tr;
     const hit = s.r != null && ((s.r >= tr && (tw == null || (s.w != null && s.w >= tw - 1e-9))) || (tw != null && s.w != null && e1rm(s.w, s.r) >= e1rm(tw, tr) - 1e-9));
     g.classList.toggle('hit', hit); g.textContent = (hit ? '✓ Ziel erreicht: ' : '🎯 Ziel: ') + g.dataset.txt; }
+});
+// Gewicht 0–999 kg, Wiederholungen ganze Zahl 0–999, Minuten 0–999
+function cleanIn(f, v) { let n = num(v); if (n == null) return null; n = Math.min(999, Math.max(0, n)); return f === 'r' ? Math.round(n) : Math.round(n * 100) / 100; }
+document.addEventListener('focusout', ev => {
+  const el = ev.target; if (!el.dataset || !el.dataset.in || !S.ex) return;
+  const e = getEntry(S.day, S.ex), s = e && e.sets[+el.dataset.i]; if (!s) return;
+  const v = s[el.dataset.in], txt = v == null ? '' : String(v).replace('.', DEC);
+  if (el.value !== txt) el.value = txt;
 });
 document.addEventListener('keydown', ev => {
   if (ev.key !== 'Enter' || !ev.target.dataset.in) return;
@@ -2663,6 +2753,22 @@ if (LANG === 'en') {
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(trNode))).observe(document.body, { childList: true, subtree: true });
   trNode(document.body);
 }
+function hintsHTML() {
+  if (!STANDALONE || S.tab !== 'today' || S.ex || S.settings || S.cal || S.redit) return '';
+  const en = LANG === 'en', now = Date.now(), H = lsGet('tt_hints') || {};
+  const installed = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  const box = (id, txt, btn) => `<div class="hint-box"><div>${txt}</div><div class="hint-acts">${btn || ''}<button class="linkbtn small" data-hint="${id}">${en ? 'Later' : 'Später'}</button></div></div>`;
+  let out = '';
+  if (!installed && now - (H.inst || 0) > 7 * 864e5)
+    out += box('inst', en ? '<b>Add the app to your Home Screen</b> (Share → “Add to Home Screen”). Otherwise your browser may delete your entries after a few days without use.' : '<b>Leg die App auf deinen Home-Bildschirm</b> (Teilen → „Zum Home-Bildschirm“). Sonst kann der Browser deine Einträge nach einigen Tagen ohne Nutzung löschen.');
+  const days = sortedDayKeys().length, lb = lsGet('tt_lastBackup');
+  if (days >= 3 && now - (lb || 0) > 14 * 864e5 && now - (H.bak || 0) > 14 * 864e5)
+    out += box('bak', en ? `<b>Time for a backup.</b> ${lb ? 'Your last backup is more than 14 days old.' : 'You have not saved a backup yet.'}` : `<b>Zeit für ein Backup.</b> ${lb ? 'Dein letztes Backup ist älter als 14 Tage.' : 'Du hast noch kein Backup gesichert.'}`,
+      `<button class="btn sm primary" data-act="backup-file">${en ? 'Save backup' : 'Backup sichern'}</button>`);
+  return out;
+}
+{ const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); }; }
+document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
 /* ================= Verkauf: Testphase + Lizenz (Lemon Squeezy) ================= */
 // >>> Diese Werte nach dem Anlegen des Produkts bei Lemon Squeezy eintragen <<<
 const LIC_CFG = {
@@ -2716,6 +2822,14 @@ const Lic = {
       if (j.valid === true && this.matches(j.meta, j.license_key)) { this.st.ok = true; this.st.checked = Date.now(); this.save(); }
       else if (j.valid === false || http === 404 || (j.valid === true && !this.matches(j.meta, j.license_key))) { this.st.ok = false; this.save(); this.gate(); }
     } catch (e) { /* offline o. ä.: Freischaltung bleibt bestehen */ }
+  },
+  async deactivate() {
+    if (!this.st.inst) throw new Error(T('Dieses Gerät kann nicht automatisch abgemeldet werden. Bitte schreib uns über das Impressum.', 'This device cannot be signed out automatically. Please contact us via the imprint.'));
+    let res;
+    try { res = await this.call('deactivate', { license_key: this.st.key, instance_id: this.st.inst }); }
+    catch (e) { throw new Error(T('Keine Verbindung. Bitte prüfe dein Internet und versuche es noch einmal.', 'No connection. Please check your internet and try again.')); }
+    if (!res.j.deactivated && res.http !== 404) throw new Error(T('Abmelden hat nicht geklappt. Bitte versuche es später noch einmal.', 'Signing out failed. Please try again later.'));
+    Object.assign(this.st, { key: '', inst: '', ok: false, checked: 0 }); this.save();
   },
   fmtLeft() {
     const h = Math.max(0, this.left()) / 3600e3;
@@ -2785,10 +2899,20 @@ const Lic = {
   },
   settingsHTML() {
     return this.unlocked()
-      ? `<label class="lab">${T('Lizenz', 'License')}</label><div class="small muted">✅ ${T('Freigeschaltet', 'Unlocked')} · ${esc(this.st.key.slice(0, 8))}…</div>`
+      ? `<label class="lab">${T('Lizenz', 'License')}</label><div class="small muted">✅ ${T('Freigeschaltet', 'Unlocked')} · ${esc(this.st.key.slice(0, 8))}…</div>
+        <button class="btn block" data-licoff="1" style="margin-top:8px">${T('Dieses Gerät abmelden', 'Sign out this device')}</button>
+        <div class="small muted" style="margin-top:6px">${T('Gibt eine deiner 3 Aktivierungen frei, z. B. vor einem Handywechsel. Deine Einträge bleiben erhalten.', 'Frees one of your 3 activations, e.g. before switching phones. Your entries are kept.')}</div>`
       : `<label class="lab">${T('Lizenz', 'License')}</label><button class="btn block" data-licopen="1">${T('App freischalten', 'Unlock the app')}${this.inTrial() ? ' · ' + this.fmtLeft() : ''}</button>`;
   }
 };
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-licoff]'); if (!b) return;
+  const key = Lic.st.key;
+  if (!await modal({ title: T('Dieses Gerät abmelden?', 'Sign out this device?'), body: esc(T('Die App wird auf diesem Gerät gesperrt, bis du deinen Lizenzcode wieder eingibst. Deine Einträge bleiben erhalten. Dein Code: ', 'The app will be locked on this device until you enter your license key again. Your entries are kept. Your key: ') + key), ok: T('Abmelden', 'Sign out'), cancel: T('Abbrechen', 'Cancel') })) return;
+  b.disabled = true;
+  try { await Lic.deactivate(); S.settings = false; render(); Lic.gate(); toast(T('Gerät abgemeldet', 'Device signed out')); }
+  catch (x) { b.disabled = false; toast(x.message); }
+});
 document.addEventListener('click', e => { if (e.target.closest('[data-licopen]')) { document.querySelector('.modal-bg')?.remove(); Lic.overlay('unlock'); } });
 { const _render = render; render = function () { _render(); Lic.banner(); }; }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { Lic.gate(); Lic.recheck(); } });
