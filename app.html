@@ -2834,7 +2834,7 @@ const Lic = {
     return h >= 1 ? T(`noch ${Math.ceil(h)} Std.`, `${Math.ceil(h)} h left`) : T(`noch ${Math.max(1, Math.ceil(h * 60))} Min.`, `${Math.max(1, Math.ceil(h * 60))} min left`);
   },
   buy() { window.open(LIC_CFG.checkout, '_blank'); },
-  overlay(kind) {
+  overlay(kind, haveKey) {
     document.getElementById('lic-ov')?.remove();
     const ov = document.createElement('div'); ov.id = 'lic-ov'; ov.className = 'lic-ov';
     const keyForm = `<div class="lic-key"><input class="f" id="lic-in" placeholder="${T('Lizenzcode aus der Kauf-Mail', 'License key from your purchase email')}" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -2846,7 +2846,7 @@ const Lic = {
       <input class="f" id="lic-name" placeholder="${T('Dein Vorname', 'Your first name')}" autocomplete="given-name" maxlength="30">
       <div class="lic-p small">${T(`Du kannst die App ${LIC_CFG.trialHours} Stunden lang kostenlos und ohne Einschränkungen testen. Danach schaltest du sie mit einem Einmalkauf für ${LIC_CFG.price} dauerhaft frei – kein Abo.`, `You can try the app free with no limits for ${LIC_CFG.trialHours} hours. Then unlock it for good with a one-time purchase of ${LIC_CFG.price} – no subscription.`)}</div>
       <button class="btn primary block" data-lic="start">${T('Test starten', 'Start trial')}</button>
-      <details class="lic-have"><summary>${T('Ich habe schon einen Lizenzcode', 'I already have a license key')}</summary>${keyForm}</details></div>`;
+      <details class="lic-have"${haveKey ? ' open' : ''}><summary>${T('Ich habe schon einen Lizenzcode', 'I already have a license key')}</summary>${keyForm}</details></div>`;
     else if (kind === 'locked') ov.innerHTML = `<div class="lic-box">${logo}
       <div class="lic-h">${T('Deine Testphase ist vorbei', 'Your trial has ended')}</div>
       <div class="lic-p">${T(`Schalte die App mit einem Einmalkauf für ${LIC_CFG.price} dauerhaft frei. Alle deine Einträge bleiben erhalten.`, `Unlock the app for good with a one-time purchase of ${LIC_CFG.price}. All your entries are kept.`)}</div>
@@ -2881,9 +2881,13 @@ const Lic = {
       }
     });
     document.body.appendChild(ov);
+    if (haveKey) setTimeout(() => ov.querySelector('#lic-in')?.focus(), 50);
   },
   gate() {
+    const want = /[?&]lic\b/.test(location.search);
+    if (want) history.replaceState(null, '', location.pathname);
     if (this.unlocked()) return;
+    if (want) return this.overlay(!this.st.trialStart ? 'welcome' : this.left() <= 0 ? 'locked' : 'unlock', true);
     if (!this.st.trialStart) return this.overlay('welcome');
     if (this.left() <= 0) return this.overlay('locked');
     clearTimeout(this._t); this._t = setTimeout(() => this.gate(), Math.min(this.left() + 500, 2 ** 31 - 1));
