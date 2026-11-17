@@ -2772,19 +2772,18 @@ function hintsHTML() {
 }
 { const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); }; }
 document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
-/* ================= Verkauf: Testphase + Lizenz (Lemon Squeezy) ================= */
-// >>> Diese Werte nach dem Anlegen des Produkts bei Lemon Squeezy eintragen <<<
+/* ================= Verkauf: Testphase + Lizenz (Polar) ================= */
+// >>> Diese Werte aus dem Polar-Dashboard eintragen <<<
 const LIC_CFG = {
-  checkout: 'https://trainingstagebuch.lemonsqueezy.com/checkout/buy/07a06e55-a4fe-4125-9ded-8e576040bb84', // Kauf-Link ("Share" beim Produkt)
-  storeId: 0,      // Store-ID (Settings → Stores). 0 = nicht prüfen
-  productId: 0,    // Produkt-ID. 0 = nicht prüfen
-  price: '4,99 €', // Anzeige in der App
-  trialHours: 24,  // Testphase in Stunden
-  recheckDays: 7,  // so oft wird der Code online nachgeprüft (z. B. nach Rückerstattung)
-  allowTest: false // Codes aus Testkäufen (Testmodus) nicht akzeptieren
+  checkout: 'https://buy.polar.sh/polar_cl_HQlI0e8lITHFglq4iEA69gxeA8emvku4Bp97x3wLJ6V', // Checkout-Link
+  orgId: 'e66f3cf2-e02a-42e9-8158-8092fcc6ae6a', // Settings → General → Organization ID (nur Codes dieser Organisation werden akzeptiert)
+  price: '4,99 €',  // Anzeige in der App
+  trialHours: 24,   // Testphase in Stunden
+  recheckDays: 7    // so oft wird der Code online nachgeprüft (z. B. nach Rückerstattung)
 };
-const LS_API = 'https://api.lemonsqueezy.com/v1/licenses/';
+const LIC_API = 'https://api.polar.sh/v1/customer-portal/license-keys/';
 const T = (de, en) => LANG === 'en' ? en : de;
+const NO_NET = () => new Error(T('Keine Verbindung. Bitte prüfe dein Internet und versuche es noch einmal.', 'No connection. Please check your internet and try again.'));
 const Lic = {
   st: Object.assign({ trialStart: 0, key: '', inst: '', ok: false, checked: 0 }, lsGet('tt_lic') || {}),
   save() { lsSet('tt_lic', this.st); },
@@ -2792,46 +2791,42 @@ const Lic = {
   left() { return this.st.trialStart + LIC_CFG.trialHours * 3600e3 - Date.now(); },
   inTrial() { return !this.unlocked() && this.left() > 0; },
   async call(path, data) {
-    const r = await fetch(LS_API + path, { method: 'POST', headers: { Accept: 'application/json' }, body: new URLSearchParams(data) });
+    const r = await fetch(LIC_API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(Object.assign({ organization_id: LIC_CFG.orgId }, data)) });
     let j = null; try { j = await r.json(); } catch (e) {}
     return { http: r.status, j: j || {} };
   },
-  matches(meta, lk) {
-    if (!LIC_CFG.allowTest && lk && lk.test_mode === true) return false;
-    if (!meta) return true;
-    if (LIC_CFG.storeId && +meta.store_id !== +LIC_CFG.storeId) return false;
-    if (LIC_CFG.productId && +meta.product_id !== +LIC_CFG.productId) return false;
-    return true;
-  },
+  good(k) { return !!k && k.status === 'granted' && (!k.expires_at || new Date(k.expires_at) > new Date()); },
+  errText(j) { const d = j && j.detail; return (typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg).join(' ') : '') + ' ' + ((j && j.error) || ''); },
   async activate(key) {
     key = (key || '').trim();
     if (key.length < 8) throw new Error(T('Bitte gib deinen Lizenzcode ein.', 'Please enter your license key.'));
     let res;
-    try { res = await this.call('activate', { license_key: key, instance_name: (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : 'Gerät') + ' ' + new Date().toISOString().slice(0, 10) }); }
-    catch (e) { throw new Error(T('Keine Verbindung. Bitte prüfe dein Internet und versuche es noch einmal.', 'No connection. Please check your internet and try again.')); }
+    try { res = await this.call('activate', { key, label: (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : T('Gerät', 'Device')) + ' ' + new Date().toISOString().slice(0, 10) }); }
+    catch (e) { throw NO_NET(); }
     const j = res.j;
-    if (!j.activated) {
-      const m = String(j.error || '');
-      if (/limit/i.test(m)) throw new Error(T('Dieser Code ist schon auf der maximalen Anzahl Geräte aktiv.', 'This key is already active on the maximum number of devices.'));
+    if (res.http >= 400 || !j.id) {
+      if (/limit/i.test(this.errText(j))) throw new Error(T('Dieser Code ist schon auf 3 Geräten aktiv. Melde ein Gerät in den Einstellungen ab (Zahnrad → Lizenz) und versuche es dann noch einmal.', 'This key is already active on 3 devices. Sign out one device in the settings (gear → License), then try again.'));
       throw new Error(T('Dieser Code ist ungültig. Bitte prüfe die Eingabe (am besten aus der Kauf-Mail kopieren).', 'This key is not valid. Please check it (best copy it from your purchase email).'));
     }
-    if (!this.matches(j.meta, j.license_key)) throw new Error(T('Dieser Code ist für diese App nicht gültig.', 'This key is not valid for this app.'));
-    Object.assign(this.st, { key, inst: (j.instance && j.instance.id) || '', ok: true, checked: Date.now() }); this.save();
+    if (j.license_key && !this.good(j.license_key)) throw new Error(T('Dieser Code ist nicht mehr gültig.', 'This key is no longer valid.'));
+    Object.assign(this.st, { key, inst: j.id, ok: true, checked: Date.now() }); this.save();
   },
   async recheck() {
     if (!this.st.key || Date.now() - this.st.checked < LIC_CFG.recheckDays * 864e5 || !navigator.onLine) return;
     try {
-      const { http, j } = await this.call('validate', this.st.inst ? { license_key: this.st.key, instance_id: this.st.inst } : { license_key: this.st.key });
-      if (j.valid === true && this.matches(j.meta, j.license_key)) { this.st.ok = true; this.st.checked = Date.now(); this.save(); }
-      else if (j.valid === false || http === 404 || (j.valid === true && !this.matches(j.meta, j.license_key))) { this.st.ok = false; this.save(); this.gate(); }
-    } catch (e) { /* offline o. ä.: Freischaltung bleibt bestehen */ }
+      const { http, j } = await this.call('validate', this.st.inst ? { key: this.st.key, activation_id: this.st.inst } : { key: this.st.key });
+      if (http === 200 && this.good(j)) { this.st.ok = true; this.st.checked = Date.now(); this.save(); }
+      else if (http === 404 || (http === 200 && !this.good(j))) { this.st.ok = false; this.save(); this.gate(); }
+      // andere Fehler (Server, Netz): Freischaltung bleibt bestehen
+    } catch (e) { /* offline o. ä. */ }
   },
   async deactivate() {
     if (!this.st.inst) throw new Error(T('Dieses Gerät kann nicht automatisch abgemeldet werden. Bitte schreib uns über das Impressum.', 'This device cannot be signed out automatically. Please contact us via the imprint.'));
     let res;
-    try { res = await this.call('deactivate', { license_key: this.st.key, instance_id: this.st.inst }); }
-    catch (e) { throw new Error(T('Keine Verbindung. Bitte prüfe dein Internet und versuche es noch einmal.', 'No connection. Please check your internet and try again.')); }
-    if (!res.j.deactivated && res.http !== 404) throw new Error(T('Abmelden hat nicht geklappt. Bitte versuche es später noch einmal.', 'Signing out failed. Please try again later.'));
+    try { res = await this.call('deactivate', { key: this.st.key, activation_id: this.st.inst }); }
+    catch (e) { throw NO_NET(); }
+    if (res.http !== 204 && res.http !== 200 && res.http !== 404) throw new Error(T('Abmelden hat nicht geklappt. Bitte versuche es später noch einmal.', 'Signing out failed. Please try again later.'));
     Object.assign(this.st, { key: '', inst: '', ok: false, checked: 0 }); this.save();
   },
   fmtLeft() {
