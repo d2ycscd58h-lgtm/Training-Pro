@@ -668,11 +668,11 @@ BUILTIN.push(
   { id: 'rdl', name: 'Rumänisches Kreuzheben', icon: 'deadlift', cat: 'Beine' },
   { id: 'sumodl', name: 'Kreuzheben Sumo', icon: 'deadlift', cat: 'Beine' },
   { id: 'seatedlegcurl', name: 'Beinbeuger sitzend', icon: 'legext', cat: 'Beine' },
-  { id: 'hipthrust', name: 'Hip Thrust', icon: 'hipthrust', cat: 'Beine' },
-  { id: 'glutebridge', name: 'Glute Bridge', icon: 'hipthrust', cat: 'Beine' },
-  { id: 'abductor', name: 'Abduktoren-Maschine', icon: 'legext', cat: 'Beine' },
+  { id: 'hipthrust', name: 'Hip Thrust', icon: 'hipthrust', cat: 'Po' },
+  { id: 'glutebridge', name: 'Glute Bridge', icon: 'hipthrust', cat: 'Po' },
+  { id: 'abductor', name: 'Abduktoren-Maschine', icon: 'legext', cat: 'Po' },
   { id: 'adductor', name: 'Adduktoren-Maschine', icon: 'legext', cat: 'Beine' },
-  { id: 'glutekick', name: 'Glute Kickback am Kabel', icon: 'lunge', cat: 'Beine' },
+  { id: 'glutekick', name: 'Glute Kickback am Kabel', icon: 'lunge', cat: 'Po' },
   { id: 'presscalf', name: 'Wadenheben an der Beinpresse', icon: 'legpress', cat: 'Beine' },
   { id: 'hanglegraise', name: 'Beinheben hängend', icon: 'hanglegraise', cat: 'Bauch' },
   { id: 'cablecrunch', name: 'Kabel-Crunch', icon: 'crunch', cat: 'Bauch' },
@@ -813,7 +813,7 @@ const UI_EN = {
   'Heute': 'Today', 'Gestern': 'Yesterday', 'Vorheriger Tag': 'Previous day', 'Nächster Tag': 'Next day', 'Monatsübersicht öffnen': 'Open month view',
   '⏱ Die Trainingszeit startet mit „Start“ bei Cardio oder mit deinem ersten Eintrag': '⏱ The workout timer starts with “Start” on cardio or with your first entry',
   'Nächstes Training': 'Next workout', 'Meine Routinen': 'My routines', 'noch nie': 'never', 'Neue Routine': 'New routine', 'Zuletzt trainiert': 'Recently trained',
-  'Alle Übungen': 'All exercises', 'Cardio': 'Cardio', 'Brust': 'Chest', 'Rücken': 'Back', 'Beine': 'Legs', 'Schultern': 'Shoulders', 'Arme': 'Arms', 'Bauch': 'Abs', 'Eigene': 'Custom',
+  'Alle Übungen': 'All exercises', 'Cardio': 'Cardio', 'Brust': 'Chest', 'Rücken': 'Back', 'Beine': 'Legs', 'Schultern': 'Shoulders', 'Arme': 'Arms', 'Bauch': 'Abs', 'Po': 'Glutes', 'Eigene': 'Custom',
   'Eigene Übungen': 'Custom exercises', 'Übung hinzufügen': 'Add exercise', 'Ausführung anzeigen': 'Show how to', 'Optionen': 'Options',
   'Ziel heute:': 'Today\'s goal:', '– Ziele für jeden Satz stehen unten': '– goals for each set are below',
   'Tipp: Tippe auf die Satznummer, um einen Satz als': 'Tip: tap the set number to mark a set as a', 'Aufwärmsatz (A)': 'warm-up set (A)', 'zu markieren.': '',
@@ -868,7 +868,7 @@ const UI_EN = {
   'Die App begrüßt dich damit:': 'The app greets you with:', 'Bestwert': 'Best', 'Trainingszeit': 'Workout time', 'Training': 'Workout',
 };
 // Dynamische Texte (reguläre Ausdrücke, Reihenfolge wichtig)
-const GRP_EN = { 'Brust': 'Chest', 'Rücken': 'Back', 'Bein': 'Leg', 'Beine': 'Leg', 'Schultern': 'Shoulder', 'Arme': 'Arm', 'Bauch': 'Abs', 'Cardio': 'Cardio', 'Eigene': 'Custom', 'Neue': 'New' };
+const GRP_EN = { 'Brust': 'Chest', 'Rücken': 'Back', 'Bein': 'Leg', 'Beine': 'Leg', 'Schultern': 'Shoulder', 'Arme': 'Arm', 'Bauch': 'Abs', 'Po': 'Glutes', 'Cardio': 'Cardio', 'Eigene': 'Custom', 'Neue': 'New' };
 const RX_EN = [
   [/^Hallo (.+) 👋$/, 'Hi $1 👋'], [/^Hallo 👋$/, 'Hi 👋'],
   [/^(Brust|Rücken|Beine?|Schultern|Arme|Bauch|Cardio|Eigene|Neue)-Tag$/, (m, g) => GRP_EN[g] + ' day'],
@@ -928,7 +928,7 @@ function trNode(root) {
   while ((n = w.nextNode())) { if (n.parentElement && n.parentElement.closest('script,style,textarea')) continue; const v = trText(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; }
   [root, ...root.querySelectorAll('[placeholder],[aria-label],[title]')].forEach(e => ['placeholder', 'aria-label', 'title'].forEach(a => { const v = e.getAttribute && e.getAttribute(a); if (v) { const t = trText(v); if (t !== v) e.setAttribute(a, t); } }));
 }
-const CATS = ['Cardio', 'Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Eigene'];
+const CATS = ['Cardio', 'Brust', 'Rücken', 'Beine', 'Po', 'Schultern', 'Arme', 'Bauch', 'Eigene'];
 
 /* ================= Persönliche Einstellungen ================= */
 const ACCENTS = [['#3987e5', 'Blau'], ['#199e70', 'Grün'], ['#d95926', 'Orange'], ['#9085e9', 'Lila'], ['#d55181', 'Pink'], ['#e04a4a', 'Rot'], ['#1b9fb0', 'Türkis'], ['#c98500', 'Gold']];
@@ -1163,7 +1163,7 @@ const dispName = e => { const x = exById(e.exId); return x ? x.name : e.name; };
 const routineById = id => S.routines.find(r => r.id === id);
 function routineGroup(r) {
   const cnt = {}; r.exIds.forEach(id => { const x = exById(id); if (x) { const c = fixCat(x.cat); cnt[c] = (cnt[c] || 0) + 1; } });
-  const pri = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Cardio', 'Eigene'];
+  const pri = ['Brust', 'Rücken', 'Beine', 'Po', 'Schultern', 'Arme', 'Bauch', 'Cardio', 'Eigene'];
   let pool = ['Brust', 'Rücken', 'Beine', 'Schultern'].filter(c => cnt[c]); if (!pool.length) pool = pri.filter(c => cnt[c]);
   return pool.sort((a, b) => cnt[b] - cnt[a] || pri.indexOf(a) - pri.indexOf(b))[0] || null;
 }
@@ -1406,7 +1406,7 @@ function viewHistory() {
 /* ---- Monatsübersicht ---- */
 // Hauptmuskelgruppe eines Tages = Gruppe mit den meisten Sätzen (Bauch/Arme/Cardio zählen nur, wenn sonst nichts da ist)
 const GROUPS = {
-  'Brust': { ab: 'Br', col: '#3987e5' }, 'Rücken': { ab: 'Rü', col: '#d95926' }, 'Beine': { ab: 'Be', col: '#199e70' },
+  'Brust': { ab: 'Br', col: '#3987e5' }, 'Rücken': { ab: 'Rü', col: '#d95926' }, 'Beine': { ab: 'Be', col: '#199e70' }, 'Po': { ab: 'Po', col: '#b04ad1' },
   'Schultern': { ab: 'Sc', col: '#7c6fe0' }, 'Arme': { ab: 'Ar', col: '#b87a00' }, 'Bauch': { ab: 'Ba', col: '#d14a7c' },
   'Cardio': { ab: 'Ca', col: '#0a8ea3' }, 'Eigene': { ab: 'Ei', col: '#6f6e68' },
 };
@@ -1428,7 +1428,7 @@ function mainGroup(k) {
   const d = S.days[k]; if (!d) return null;
   const cnt = {};
   d.entries.forEach(e => { const n = validSets(e.sets).length; if (n) { const c = catOf(e); cnt[c] = (cnt[c] || 0) + n; } });
-  const order = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Cardio', 'Eigene'];
+  const order = ['Brust', 'Rücken', 'Beine', 'Po', 'Schultern', 'Arme', 'Bauch', 'Cardio', 'Eigene'];
   const primary = ['Brust', 'Rücken', 'Beine', 'Schultern'];
   let pool = primary.filter(c => cnt[c]);
   if (!pool.length) pool = order.filter(c => cnt[c]);
@@ -1467,7 +1467,7 @@ function viewCalendar() {
       ${calExportButtons(upcoming.length)}</div>` : ''}`;
 }
 /* ---- Trainings planen ---- */
-const PLAN_GROUPS = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Bauch', 'Cardio'];
+const PLAN_GROUPS = ['Brust', 'Rücken', 'Beine', 'Po', 'Schultern', 'Arme', 'Bauch', 'Cardio'];
 function planGroup(P) { if (!P) return null; const r = P.r && routineById(P.r); return r ? routineGroup(r) : (P.g || null); }
 function planLabel(P) { const r = P.r && routineById(P.r); return r ? (r.name || 'Routine') : P.g ? P.g + '-Tag' : 'Training'; }
 const REMIND = [[0, 'Keine'], [15, '15 min vorher'], [30, '30 min vorher'], [60, '1 Std. vorher'], [120, '2 Std. vorher']];
@@ -2668,7 +2668,7 @@ document.addEventListener('click', async ev => {
     }
   }
 });
-function backupText() { return JSON.stringify({ app: 'trainingstagebuch', v: 1, custom: S.custom, hidden: S.hidden, routines: S.routines, plan: S.plan, days: S.days }); }
+function backupText() { return JSON.stringify({ app: 'trainingstagebuch', v: 1, prefs: { name: PREF.name, accent: PREF.accent, theme: PREF.theme, lang: PREF.lang }, custom: S.custom, hidden: S.hidden, routines: S.routines, plan: S.plan, days: S.days }); }
 function lastBackupText() { const t = lsGet('tt_lastBackup'); if (!t) return 'Noch kein Backup gesichert.'; const d = Math.floor((Date.now() - t) / 864e5); return 'Letztes Backup: ' + (d === 0 ? 'heute' : d === 1 ? 'gestern' : 'vor ' + d + ' Tagen'); }
 function importBackup(v) {
   try {
@@ -2678,7 +2678,15 @@ function importBackup(v) {
     Object.entries(d.plan || {}).forEach(([k, v]) => { if (/^\d{4}-\d\d-\d\d$/.test(k) && v && !S.plan[k]) S.plan[k] = v; });
     (d.routines || []).forEach(r => { if (r && r.id && Array.isArray(r.exIds) && !S.routines.some(x => x.id === r.id)) S.routines.push(r); });
     Object.entries(d.days).forEach(([k, day]) => { if (/^\d{4}-\d\d-\d\d$/.test(k) && day && Array.isArray(day.entries) && !S.days[k]) { S.days[k] = { date: k, entries: day.entries, start: day.start || null, end: day.end || null }; Store.saveDay(k, true); n++; } });
+    (d.hidden || []).forEach(h => { if (typeof h === 'string' && !S.hidden.includes(h)) S.hidden.push(h); });
+    const pf = d.prefs || {}, langBefore = PREF.lang || 'auto';
+    if (/^#[0-9a-f]{6}$/i.test(pf.accent || '')) PREF.accent = pf.accent;
+    if (['auto', 'light', 'dark'].includes(pf.theme)) PREF.theme = pf.theme;
+    if (typeof pf.name === 'string' && pf.name.trim() && !(PREF.name || '').trim()) PREF.name = pf.name.slice(0, 30);
+    if (['auto', 'de', 'en'].includes(pf.lang)) PREF.lang = pf.lang;
+    savePrefs();
     Store.saveSettings(); render(); toast(`${n} Trainingstage importiert`);
+    if ((PREF.lang || 'auto') !== langBefore) setTimeout(() => location.reload(), 1200);
   } catch (e) { toast('Das ist kein gültiges Backup.'); }
 }
 function unlockAudioSafe() {}
@@ -2751,7 +2759,7 @@ function showSplash() {
   setTimeout(hide, 2600);
 }
 if (LANG === 'en') {
-  Object.assign(GROUPS['Brust'], { ab: 'Ch' }); Object.assign(GROUPS['Rücken'], { ab: 'Bk' }); Object.assign(GROUPS['Beine'], { ab: 'Lg' });
+  Object.assign(GROUPS['Brust'], { ab: 'Ch' }); Object.assign(GROUPS['Rücken'], { ab: 'Bk' }); Object.assign(GROUPS['Beine'], { ab: 'Lg' }); Object.assign(GROUPS['Po'], { ab: 'Gl' });
   Object.assign(GROUPS['Schultern'], { ab: 'Sh' }); Object.assign(GROUPS['Arme'], { ab: 'Ar' }); Object.assign(GROUPS['Bauch'], { ab: 'Ab' }); Object.assign(GROUPS['Cardio'], { ab: 'Ca' }); Object.assign(GROUPS['Eigene'], { ab: 'Cu' });
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(trNode))).observe(document.body, { childList: true, subtree: true });
   trNode(document.body);
