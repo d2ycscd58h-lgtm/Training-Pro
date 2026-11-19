@@ -230,6 +230,33 @@
 
   /* icons */
   svg.ex{display:block;overflow:visible}
+  .bdg-card{padding:16px}.bdg-count{font-weight:700;color:var(--accent);font-size:15px}
+  .bdg-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  .bdg{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:4px 2px;color:inherit;font:inherit;cursor:pointer}
+  .bdg .bdg-svg{width:100%;max-width:74px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+  .bdg.won .bdg-svg{animation:bdgIn .5s ease-out}
+  .bdg.lock .bdg-svg{filter:grayscale(1) brightness(.55) contrast(.9);opacity:.55}
+  .bdg-n{font-size:11.5px;font-weight:600;line-height:1.2;text-align:center;color:var(--text-2);min-height:28px}
+  .bdg.won .bdg-n{color:var(--text)}
+  .bdg-bar{display:block;width:80%;height:4px;border-radius:3px;background:var(--line);overflow:hidden}.bdg-bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+  .bdg-bar.big{width:100%;height:8px;margin-top:14px}
+  .bdg-ex{position:absolute;top:0;right:4px;width:24px;height:24px;border-radius:7px;background:var(--surface-2);padding:2px;z-index:1}.bdg-ex .ex{width:100%;height:100%}
+  .bdg-full .modal{max-height:86vh;display:flex;flex-direction:column;width:min(560px,94vw)}
+  .bdg-scroll{overflow:auto;margin-top:10px;-webkit-overflow-scrolling:touch}
+  .bdg-cat{margin-bottom:14px}.bdg-h{display:flex;justify-content:space-between;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2);margin:6px 2px 8px}
+  .bdg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .bdg-detail{text-align:center}.bdg-big{width:150px;margin:6px auto 10px}.bdg-big svg{width:100%;filter:drop-shadow(0 12px 22px rgba(0,0,0,.45))}
+  .bdg-detail.lock .bdg-big svg{filter:grayscale(1) brightness(.6);opacity:.6}
+  .bdg-detail.won .bdg-big{position:relative}.bdg-detail.won .bdg-big::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);background-size:250% 100%;mix-blend-mode:overlay;animation:bdgShine 2.6s ease-in-out infinite;clip-path:polygon(50% 3%,89% 24%,89% 65%,50% 86%,11% 65%,11% 24%)}
+  .bdg-date{margin-top:12px;font-weight:600;color:var(--accent)}
+  .bdg-kicker{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ffd60a;margin-bottom:4px}
+  .bdg-big.pop{animation:bdgPop .7s cubic-bezier(.2,1.6,.4,1)}
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1}.confetti i{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;animation:conf linear forwards}
+  .bdg-cele .modal{position:relative;z-index:2}
+  @keyframes conf{to{transform:translateY(105vh) rotate(720deg)}}
+  @keyframes bdgPop{0%{transform:scale(.2) rotate(-25deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+  @keyframes bdgIn{0%{transform:scale(.85)}100%{transform:scale(1)}}
+  @keyframes bdgShine{0%{background-position:150% 0}60%,100%{background-position:-60% 0}}
   .os-tabs{display:flex;gap:6px;margin:8px 0}
   .os-tab{flex:1;padding:6px 8px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--text-2);font:inherit;font-size:13px;font-weight:600}
   .os-tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -1068,11 +1095,27 @@ function previous(exId, beforeKey) {
   return null;
 }
 const workSets = sets => validSets(sets).filter(s => !s.wu);
+// Körpergewichts-Übungen: Anteil des Körpergewichts, der bewegt wird (Richtwerte). -1 = Unterstützung wird abgezogen.
+const BW_EX = { pullup: 1, chinup: 1, dips: 1, assistpullup: -1, benchdip: 0.7, pushup: 0.65 };
+function bwNote(id) {
+  const f = BW_EX[id], bw = +PREF.bw || 0, en = LANG === 'en', kg = fmtNum(bw);
+  if (!bw) return en ? 'Enter only the added weight. Add your body weight in the settings and it will count too.' : 'Ins Feld kommt nur das Zusatzgewicht. Trag in den Einstellungen dein Körpergewicht ein, dann zählt es mit.';
+  if (f < 0) return en ? `Calculated with your body weight (${kg} kg) minus the assistance.` : `Gerechnet mit deinem Körpergewicht (${kg} kg) minus Unterstützung.`;
+  const pct = f === 1 ? '' : Math.round(f * 100) + (en ? ' % of ' : ' % von ');
+  return en ? `Includes ${pct}your body weight (${kg} kg). Enter only the added weight.` : `Inkl. ${pct}deinem Körpergewicht (${kg} kg). Ins Feld kommt nur das Zusatzgewicht.`;
+}
+// Gesamtlast: mit Körpergewicht (falls eingetragen), sonst nur das Zusatzgewicht
+function effW(exId, w) {
+  const f = BW_EX[exId], bw = +PREF.bw || 0;
+  if (f == null || !bw) return w;
+  const add = w == null ? 0 : +w;
+  return Math.round((f < 0 ? Math.max(0, bw - add) : bw * f + add) * 10) / 10;
+}
 const wuSets = sets => validSets(sets).filter(s => s.wu);
 function bestEver(exId, beforeKey) {
   let best = null;
   for (const k of Object.keys(S.days)) { if (k >= beforeKey) continue; const e = S.days[k].entries.find(x => x.exId === exId); if (!e) continue;
-    workSets(e.sets).forEach(s => { const v = e1rm(s.w, s.r) ?? (s.r || 0); if (best == null || v > best) best = v; }); }
+    workSets(e.sets).forEach(s => { const v = e1rm(effW(exId, s.w), s.r) ?? (s.r || 0); if (best == null || v > best) best = v; }); }
   return best;
 }
 const setsText = sets => validSets(sets).map(s => s.m != null ? fmtNum(s.m) + ' min' : (s.w != null ? fmtNum(s.w) + ' kg × ' : '') + (s.r ?? '–') + (s.wu ? ' (A)' : '')).join(' · ');
@@ -1133,7 +1176,7 @@ setInterval(checkDay, 20000);
 setInterval(() => { document.querySelectorAll('[data-run]').forEach(el => { const r = runOf(el.dataset.run); if (r) el.textContent = clock((Date.now() - r.t0) / 1000); }); }, 1000);
 setInterval(() => { document.querySelectorAll('[data-timer]').forEach(el => { const t = timerInfo(el.dataset.timer); if (t && t.live) el.textContent = clock((Date.now() - t.start) / 1000); }); }, 1000);
 const topSet = sets => (workSets(sets).length ? workSets(sets) : validSets(sets)).reduce((b, s) => { const v = e1rm(s.w, s.r) ?? (s.r || 0) / 1000; return !b || v > b.v ? { ...s, v } : b; }, null);
-const volume = sets => workSets(sets).reduce((a, s) => a + (s.w || 0) * (s.r || 0), 0);
+const volume = (sets, exId) => workSets(sets).reduce((a, s) => a + (effW(exId, s.w) || 0) * (s.r || 0), 0);
 function suggestion(prev) {
   const t = setTarget(workSets(prev.sets)[0]); if (!t) return '';
   return `<b>${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} Wdh.</b> im 1. Satz <span class="small t2">– Ziele für jeden Satz stehen unten</span>`;
@@ -1173,6 +1216,9 @@ function viewSettings() {
   return `<label class="lab" style="margin-top:4px">Dein Name</label>
     <input class="f" data-pref="name" value="${esc(PREF.name)}" placeholder="Dein Vorname" autocomplete="given-name" style="height:50px;font-size:17px;font-weight:600">
     <div class="small muted" style="margin-top:6px">Die App begrüßt dich damit: „Hallo ${esc(PREF.name || 'Alex')}, bereit für dein nächstes Training?“</div>
+    <label class="lab" style="margin-top:14px">${LANG === 'en' ? 'Body weight (kg)' : 'Körpergewicht (kg)'}</label>
+    <input class="f" data-pref="bw" inputmode="decimal" value="${PREF.bw ? String(PREF.bw).replace('.', LANG === 'en' ? '.' : ',') : ''}" placeholder="${LANG === 'en' ? 'e.g. 80' : 'z. B. 80'}">
+    <div class="small muted" style="margin-top:6px">${LANG === 'en' ? 'Optional – used only for the body-weight badges. Stays on your phone.' : 'Freiwillig – nur für die Abzeichen nach Körpergewicht. Bleibt auf deinem Handy.'}</div>
     <h2>Farbe</h2>
     <div class="swatches">${ACCENTS.map(([c, l]) => `<button class="swatch ${PREF.accent === c ? 'on' : ''}" data-act="accent" data-c="${c}" style="background:${c}" aria-label="${l}">${PREF.accent === c ? '✓' : ''}</button>`).join('')}</div>
     <div class="small muted" style="margin-top:6px">Ändert Knöpfe, Bilder, Ziele und Diagramme.</div>
@@ -1344,9 +1390,10 @@ function viewExercise() {
     <button class="btn primary block" data-act="add-set" style="margin-top:6px">+ Satz hinzufügen</button></div>`;
   const tot = validSets(sets);
   if (tot.length) {
-    const vol = volume(sets), pvol = prev ? volume(prev.sets) : null;
+    const vol = volume(sets, x.id), pvol = prev ? volume(prev.sets, x.id) : null;
     h += `<div class="row small t2" style="justify-content:space-between;padding:0 4px"><span>${tot.length} ${tot.length === 1 ? 'Satz' : 'Sätze'} · Volumen ${fmtNum(vol)} kg</span>
       ${pvol ? (vol > pvol ? `<span class="delta up">▲ ${fmtNum(vol - pvol)} kg mehr als letztes Mal</span>` : `<span class="muted">letztes Mal ${fmtNum(pvol)} kg</span>`) : ''}</div>`;
+    if (BW_EX[x.id] != null) h += `<div class="small muted" style="padding:4px 4px 0">${bwNote(x.id)}</div>`;
   }
   h += nextExButton(k, x.id);
   return h;
@@ -1391,10 +1438,10 @@ function setRow(exId, s, i, prev, best, all) {
   const p = s.wu ? prevA[ai] : prevW[wi];
   const t = s.wu ? null : setTarget(prevW.length ? (prevW[wi] || prevW[prevW.length - 1]) : null);
   const cw = num(s.w), cr = num(s.r);
-  const cur = e1rm(cw, cr), pv = p ? e1rm(p.w, p.r) : null;
+  const cur = e1rm(effW(exId, cw), cr), pv = p ? e1rm(effW(exId, p.w), p.r) : null, curRaw = e1rm(cw, cr);
   const up = !s.wu && cur != null && pv != null && cur > pv + 1e-9;
   const isPR = !s.wu && cur != null && best != null && cur > best + 1e-9;
-  const hit = t && cr != null && ((cr >= t.r && (t.w == null || (cw != null && cw >= t.w - 1e-9))) || (t.w != null && cur != null && cur >= e1rm(t.w, t.r) - 1e-9));
+  const hit = t && cr != null && ((cr >= t.r && (t.w == null || (cw != null && cw >= t.w - 1e-9))) || (t.w != null && curRaw != null && curRaw >= e1rm(t.w, t.r) - 1e-9));
   const goal = t ? `<tr class="tgt"><td></td><td colspan="2"><div class="goal ${hit ? 'hit' : ''}" id="goal-${i}" data-tw="${t.w ?? ''}" data-tr="${t.r}" data-txt="${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} Wdh.">${hit ? '✓ Ziel erreicht: ' : '🎯 Ziel: '}${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} Wdh.</div></td><td></td></tr>`
     : s.wu ? `<tr class="tgt"><td></td><td colspan="2"><div class="goal wu">Aufwärmsatz · zählt nicht für Ziele und Rekorde</div></td><td></td></tr>` : '';
   return goal + `<tr class="${up ? 'up' : ''} ${s.wu ? 'wu' : ''}"><td class="n"><button class="setno ${s.wu ? 'is-wu' : ''}" data-act="toggle-wu" data-i="${i}" aria-label="${s.wu ? 'Aufwärmsatz – tippen für Arbeitssatz' : 'Satz ' + (wi + 1) + ' – tippen für Aufwärmsatz'}">${s.wu ? 'A' : wi + 1}</button></td>
@@ -1583,16 +1630,194 @@ function seriesFor(exId, metric) {
     const e = S.days[k].entries.find(x => x.exId === exId); if (!e) return;
     const sets = validSets(e.sets).some(x => x.m != null) ? validSets(e.sets) : workSets(e.sets); if (!sets.length) return;
     let v = null;
-    if (metric === 'max') v = Math.max(...sets.map(s => s.w ?? -Infinity));
-    if (metric === 'orm') v = Math.max(...sets.map(s => e1rm(s.w, s.r) ?? -Infinity));
+    if (metric === 'max') v = Math.max(...sets.map(s => effW(exId, s.w) ?? -Infinity));
+    if (metric === 'orm') v = Math.max(...sets.map(s => e1rm(effW(exId, s.w), s.r) ?? -Infinity));
     if (metric === 'reps') v = Math.max(...sets.map(s => s.r ?? -Infinity));
-    if (metric === 'vol') v = volume(sets);
+    if (metric === 'vol') v = volume(sets, exId);
     if (metric === 'min') v = sets.reduce((a, s) => a + (s.m || 0), 0);
     if (isFinite(v) && v > 0) pts.push({ k, t: keyDate(k).getTime(), v, sets });
   });
   return pts;
 }
-function viewProgress() {
+/* ================= Abzeichen ================= */
+const BADGE_TIERS = {
+  bronze: ['#8a4f22', '#d08a4c', '#f6c08d'], silver: ['#6b7480', '#b8c0ca', '#f3f6f9'], gold: ['#9a6a0c', '#e0b23a', '#fff1a8'],
+  diamond: ['#1c6f9c', '#4cc3ef', '#d9f7ff'], elite: ['#4b1fa3', '#9d5cf0', '#f1d6ff']
+};
+const BENCH_IDS = ['benchbb', 'bench'], SQUAT_IDS = ['squat'], DL_IDS = ['deadlift', 'sumodl'];
+const fmtKg = v => (Math.round(v * 10) / 10).toLocaleString(LANG === 'en' ? 'en' : 'de');
+function badgeSVG(b, big) {
+  const [d, m, l] = BADGE_TIERS[b.tier] || BADGE_TIERS.bronze, id = 'g' + b.id.replace(/[^a-z0-9]/gi, '') + (big ? 'B' : '');
+  const center = b.big ? `<text x="50" y="${b.unit ? 52 : 57}" text-anchor="middle" font-size="${String(b.big).length > 3 ? 19 : String(b.big).length > 2 ? 23 : 27}" font-weight="800" fill="#fff" font-family="Inter,system-ui,sans-serif">${b.big}</text>${b.unit ? `<text x="50" y="66" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" opacity=".85" font-family="Inter,system-ui,sans-serif">${b.unit}</text>` : ''}`
+    : `<text x="50" y="61" text-anchor="middle" font-size="28">${b.emoji}</text>`;
+  const stars = { bronze: 1, silver: 2, gold: 3, diamond: 4, elite: 5 }[b.tier] || 1;
+  return `<svg class="bdg-svg" viewBox="0 0 100 112" aria-hidden="true"><defs>
+    <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${l}"/><stop offset=".45" stop-color="${m}"/><stop offset="1" stop-color="${d}"/></linearGradient>
+    <radialGradient id="${id}c" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="${m}"/><stop offset=".7" stop-color="${d}"/><stop offset="1" stop-color="#151619"/></radialGradient></defs>
+    <path d="M30 86 L22 108 L36 102 L42 112 L50 88 Z" fill="${d}"/><path d="M70 86 L78 108 L64 102 L58 112 L50 88 Z" fill="${d}"/>
+    <polygon points="50,4 89,27 89,73 50,96 11,73 11,27" fill="url(#${id}r)"/>
+    <polygon points="50,12 82,31 82,69 50,88 18,69 18,31" fill="url(#${id}c)"/>
+    <polygon points="50,12 82,31 82,40 50,22 18,40 18,31" fill="#fff" opacity=".13"/>
+    ${center}
+    <g fill="${l}">${Array.from({ length: stars }, (_, i) => `<circle cx="${50 + (i - (stars - 1) / 2) * 7}" cy="80" r="2"/>`).join('')}</g></svg>`;
+}
+function computeBadges() {
+  const en = LANG === 'en', bw = +PREF.bw || 0, out = [];
+  const keys = Object.keys(S.days).filter(k => (S.days[k].entries || []).some(e => validSets(e.sets).length)).sort();
+  const firstW = {}, bestW = {}, lift = { b: 0, s: 0, d: 0 };
+  let total = 0, cardio = 0, prDays = 0, prStreak = 0, firstPR = null, streakPR = null, maxDayVol = 0, dayVolAt = {};
+  const won = {}; const hit = (id, k) => { if (!won[id]) won[id] = k; };
+  const weekOf = k => { const d = new Date(k + 'T12:00:00'); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); return d.toISOString().slice(0, 10); };
+  const perWeek = {};
+  keys.forEach((k, i) => {
+    const day = S.days[k]; let vol = 0, pr = false;
+    perWeek[weekOf(k)] = (perWeek[weekOf(k)] || 0) + 1;
+    (day.entries || []).forEach(e => {
+      const sets = validSets(e.sets), x = exById(e.exId) || {}, isC = x.kind === 'cardio' || (typeof isCardio === 'function' && isCardio(e.exId));
+      if (isC) { cardio += sets.reduce((a, s) => a + (s.m || 0), 0); return; }
+      const work = sets.filter(s => !s.wu && effW(e.exId, s.w) > 0 && (s.r || 0) >= 1);
+      work.forEach(s => vol += effW(e.exId, s.w) * s.r);
+      if (!work.length) return;
+      const top = Math.max(...work.map(s => effW(e.exId, s.w)));
+      if (firstW[e.exId] == null) firstW[e.exId] = { w: top, k };
+      else if (top > (bestW[e.exId] || 0) + 1e-9) pr = true;
+      bestW[e.exId] = Math.max(bestW[e.exId] || 0, top);
+      const g = firstW[e.exId].w > 0 ? bestW[e.exId] / firstW[e.exId].w : 1;
+      [[1.1, 'b'], [1.25, 's'], [1.5, 'g'], [2, 'd']].forEach(([f, t]) => { if (g >= f - 1e-9) hit('ex:' + e.exId + ':' + t, k); });
+      if (BENCH_IDS.includes(e.exId)) lift.b = Math.max(lift.b, top);
+      if (SQUAT_IDS.includes(e.exId)) lift.s = Math.max(lift.s, top);
+      if (DL_IDS.includes(e.exId)) lift.d = Math.max(lift.d, top);
+    });
+    const n = i + 1; total += vol; maxDayVol = Math.max(maxDayVol, vol);
+    hit('first', k);
+    if (pr) { hit('firstpr', k); prStreak++; } else prStreak = 0;
+    if (prStreak >= 3) hit('prstreak', k);
+    if (perWeek[weekOf(k)] >= 3) hit('week3', k);
+    [10, 20, 30, 40, 50, 75, 100, 150, 200, 365, 500].forEach(c => { if (n >= c) hit('n' + c, k); });
+    if (vol >= 10000) hit('vol10', k);
+    [[100000, 'tot100'], [1000000, 'tot1000']].forEach(([v, id]) => { if (total >= v) hit(id, k); });
+    [[600, 'c10'], [3000, 'c50']].forEach(([v, id]) => { if (cardio >= v) hit(id, k); });
+    [60, 80, 100, 120, 140].forEach(w => { if (lift.b >= w) hit('b' + w, k); });
+    [100, 140, 180].forEach(w => { if (lift.s >= w) hit('s' + w, k); });
+    [100, 140, 180, 220].forEach(w => { if (lift.d >= w) hit('d' + w, k); });
+    if (lift.b + lift.s + lift.d >= 500) hit('t500', k);
+    if (bw) {
+      [[1, 'bw_b1'], [1.5, 'bw_b15']].forEach(([f, id]) => { if (lift.b >= bw * f) hit(id, k); });
+      [[1.5, 'bw_s15'], [2, 'bw_s2']].forEach(([f, id]) => { if (lift.s >= bw * f) hit(id, k); });
+      [[2, 'bw_d2'], [2.5, 'bw_d25']].forEach(([f, id]) => { if (lift.d >= bw * f) hit(id, k); });
+    }
+    // 4 Wochen am Stück mit mind. 2 Trainings
+    const wk = weekOf(k); let ok = 0; for (let j = 0; j < 4; j++) { const d = new Date(wk + 'T12:00:00'); d.setDate(d.getDate() - 7 * j); if ((perWeek[d.toISOString().slice(0, 10)] || 0) >= 2) ok++; }
+    if (ok === 4) hit('streak4', k);
+  });
+  const n = keys.length, T = (de, e) => en ? e : de;
+  const add = (cat, id, tier, name, desc, prog, look) => out.push(Object.assign({ cat, id, tier, name, desc, at: won[id] || null, prog: won[id] ? 1 : Math.max(0, Math.min(1, prog || 0)) }, look));
+  // Start
+  add('start', 'first', 'bronze', T('Erster Schritt', 'First step'), T('Dein erstes Training eingetragen.', 'Logged your first workout.'), 0, { emoji: '🏁' });
+  add('start', 'firstpr', 'bronze', T('Erste Steigerung', 'First PR'), T('Zum ersten Mal mehr Gewicht als je zuvor bei einer Übung.', 'Lifted more than ever before on an exercise.'), 0, { emoji: '📈' });
+  add('start', 'week3', 'silver', T('Dranbleiber', 'Committed'), T('3 Trainings in einer Woche.', '3 workouts in one week.'), Math.max(0, ...Object.values(perWeek), 0) / 3, { emoji: '🔥' });
+  add('start', 'prstreak', 'gold', T('Rekord-Serie', 'PR streak'), T('3 Trainings hintereinander mit neuem Rekord.', '3 workouts in a row with a new PR.'), prStreak / 3, { emoji: '⚡' });
+  add('start', 'streak4', 'gold', T('Eiserne Routine', 'Iron routine'), T('4 Wochen am Stück mindestens 2 Trainings pro Woche.', '4 weeks in a row with at least 2 workouts each.'), 0, { emoji: '🗓️' });
+  // Anzahl
+  [[10, 'bronze'], [20, 'bronze'], [30, 'bronze'], [40, 'bronze'], [50, 'silver'], [75, 'silver'], [100, 'gold'], [150, 'gold'], [200, 'diamond'], [365, 'diamond'], [500, 'elite']].forEach(([c, t]) =>
+    add('count', 'n' + c, t, T(c + ' Trainings', c + ' workouts'), T(`${c} Trainingstage eingetragen.`, `${c} training days logged.`), n / c, { big: c, unit: T('TRAININGS', 'WORKOUTS'), left: T(`noch ${c - n} Trainings`, `${c - n} to go`) }));
+  // Kraft-Clubs
+  const club = (id, cur, w, t, nm, ex) => add('club', id, t, `${nm} ${w} kg`, T(`${ex} mit ${w} kg (mind. 1 Wiederholung).`, `${ex} with ${w} kg (at least 1 rep).`), cur / w, { big: w, unit: 'KG', sub: nm, left: T(`noch ${fmtKg(w - cur)} kg`, `${fmtKg(w - cur)} kg to go`) });
+  [[60, 'bronze'], [80, 'silver'], [100, 'gold'], [120, 'diamond'], [140, 'elite']].forEach(([w, t]) => club('b' + w, lift.b, w, t, T('Bank', 'Bench'), T('Bankdrücken', 'Bench press')));
+  [[100, 'silver'], [140, 'gold'], [180, 'diamond']].forEach(([w, t]) => club('s' + w, lift.s, w, t, T('Kniebeuge', 'Squat'), T('Kniebeuge', 'Squat')));
+  [[100, 'silver'], [140, 'gold'], [180, 'diamond'], [220, 'elite']].forEach(([w, t]) => club('d' + w, lift.d, w, t, T('Kreuzheben', 'Deadlift'), T('Kreuzheben', 'Deadlift')));
+  const tot = lift.b + lift.s + lift.d;
+  add('club', 't500', 'gold', T('500-kg-Club', '500 kg club'), T('Bankdrücken + Kniebeuge + Kreuzheben zusammen mindestens 500 kg.', 'Bench + squat + deadlift total of at least 500 kg.'), tot / 500, { big: 500, unit: 'TOTAL', left: T(`noch ${fmtKg(500 - tot)} kg`, `${fmtKg(500 - tot)} kg to go`) });
+  // Körpergewicht
+  const bwb = (id, cur, f, t, nm, ex) => add('bw', id, t, `${nm} ${String(f).replace('.', en ? '.' : ',')}× KG`, bw ? T(`${ex} mit ${String(f).replace('.', ',')}× deinem Körpergewicht (${fmtKg(bw * f)} kg).`, `${ex} with ${f}× your body weight (${fmtKg(bw * f)} kg).`) : T('Trag dein Körpergewicht in den Einstellungen ein.', 'Enter your body weight in the settings.'),
+    bw ? cur / (bw * f) : 0, { big: String(f).replace('.', en ? '.' : ',') + '×', unit: nm.toUpperCase(), left: bw ? T(`noch ${fmtKg(bw * f - cur)} kg`, `${fmtKg(bw * f - cur)} kg to go`) : T('Körpergewicht fehlt', 'Body weight missing') });
+  bwb('bw_b1', lift.b, 1, 'gold', T('Bank', 'Bench'), T('Bankdrücken', 'Bench press')); bwb('bw_b15', lift.b, 1.5, 'elite', T('Bank', 'Bench'), T('Bankdrücken', 'Bench press'));
+  bwb('bw_s15', lift.s, 1.5, 'gold', T('Kniebeuge', 'Squat'), T('Kniebeuge', 'Squat')); bwb('bw_s2', lift.s, 2, 'elite', T('Kniebeuge', 'Squat'), T('Kniebeuge', 'Squat'));
+  bwb('bw_d2', lift.d, 2, 'gold', T('Kreuzheben', 'Deadlift'), T('Kreuzheben', 'Deadlift')); bwb('bw_d25', lift.d, 2.5, 'elite', T('Kreuzheben', 'Deadlift'), T('Kreuzheben', 'Deadlift'));
+  // Fleiß
+  add('work', 'vol10', 'silver', T('10 Tonnen', '10 tonnes'), T('10.000 kg bewegt in einem einzigen Training.', '10,000 kg moved in a single workout.'), maxDayVol / 10000, { big: 10, unit: T('T AN 1 TAG', 'T IN 1 DAY'), left: T(`Rekord: ${fmtKg(maxDayVol / 1000)} t`, `Best: ${fmtKg(maxDayVol / 1000)} t`) });
+  add('work', 'tot100', 'gold', T('100 Tonnen', '100 tonnes'), T('Insgesamt 100.000 kg bewegt.', '100,000 kg moved in total.'), total / 1e5, { big: 100, unit: T('TONNEN', 'TONNES'), left: T(`${fmtKg(total / 1000)} von 100 t`, `${fmtKg(total / 1000)} of 100 t`) });
+  add('work', 'tot1000', 'diamond', T('1.000 Tonnen', '1,000 tonnes'), T('Insgesamt eine Million Kilo bewegt.', 'One million kilos moved in total.'), total / 1e6, { big: '1000', unit: T('TONNEN', 'TONNES'), left: T(`${fmtKg(total / 1000)} von 1.000 t`, `${fmtKg(total / 1000)} of 1,000 t`) });
+  add('work', 'c10', 'silver', T('10 Stunden Cardio', '10 hours cardio'), T('Insgesamt 10 Stunden Cardio.', '10 hours of cardio in total.'), cardio / 600, { big: 10, unit: T('STD CARDIO', 'H CARDIO'), left: T(`${fmtKg(cardio / 60)} von 10 Std.`, `${fmtKg(cardio / 60)} of 10 h`) });
+  add('work', 'c50', 'gold', T('50 Stunden Cardio', '50 hours cardio'), T('Insgesamt 50 Stunden Cardio.', '50 hours of cardio in total.'), cardio / 3000, { big: 50, unit: T('STD CARDIO', 'H CARDIO'), left: T(`${fmtKg(cardio / 60)} von 50 Std.`, `${fmtKg(cardio / 60)} of 50 h`) });
+  // Steigerung pro Übung
+  Object.keys(firstW).forEach(id => {
+    const x = exById(id); if (!x) return;
+    const g = bestW[id] / firstW[id].w;
+    [[1.1, 'b', 'bronze', '+10 %'], [1.25, 's', 'silver', '+25 %'], [1.5, 'g', 'gold', '+50 %'], [2, 'd', 'diamond', '×2']].forEach(([f, t, tier, lbl]) =>
+      add('ex', 'ex:' + id + ':' + t, tier, `${x.name} ${lbl}`, T(`${x.name}: ${lbl === '×2' ? 'Gewicht verdoppelt' : lbl + ' mehr Gewicht'} als beim ersten Mal (${fmtKg(firstW[id].w)} kg).`, `${x.name}: ${lbl === '×2' ? 'doubled the weight' : lbl + ' more weight'} vs. your first time (${fmtKg(firstW[id].w)} kg).`),
+        (g - 1) / (f - 1), { big: lbl.replace(' ', ''), unit: '', exId: id, step: f, left: T(`noch ${fmtKg(firstW[id].w * f - bestW[id])} kg`, `${fmtKg(firstW[id].w * f - bestW[id])} kg to go`) }));
+  });
+  return out;
+}
+const BADGE_CATS = () => LANG === 'en'
+  ? [['start', 'Getting started'], ['count', 'Workouts'], ['club', 'Strength clubs'], ['bw', 'Body weight'], ['work', 'Hard work'], ['ex', 'Progress per exercise']]
+  : [['start', 'Start'], ['count', 'Anzahl Trainings'], ['club', 'Kraft-Clubs'], ['bw', 'Nach Körpergewicht'], ['work', 'Fleiß'], ['ex', 'Steigerung pro Übung']];
+const badgeTile = b => `<button class="bdg ${b.at ? 'won' : 'lock'}" data-act="badge" data-id="${esc(b.id)}">${b.exId ? `<span class="bdg-ex">${icon((exById(b.exId) || {}).icon)}</span>` : ''}${badgeSVG(b)}
+  <span class="bdg-n">${esc(b.exId ? b.big : b.name)}</span>${b.at ? '' : `<span class="bdg-bar"><i style="width:${Math.round(b.prog * 100)}%"></i></span>`}</button>`;
+function badgesSection() {
+  const all = computeBadges(), won = all.filter(b => b.at), en = LANG === 'en';
+  const recent = won.slice().sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
+  const next = all.filter(b => !b.at && b.prog > 0 && b.cat !== 'bw').sort((a, b) => b.prog - a.prog).slice(0, 4 - Math.min(4, recent.length) || 1);
+  return `<div class="card bdg-card"><div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">${en ? 'Badges' : 'Abzeichen'}</h2><span class="bdg-count">${won.length} / ${all.length}</span></div>
+    <div class="bdg-row">${[...recent, ...next].slice(0, 4).map(badgeTile).join('') || `<div class="small muted">${en ? 'Log your first workout to earn your first badge.' : 'Trag dein erstes Training ein – dann gibt es das erste Abzeichen.'}</div>`}</div>
+    <button class="btn block" data-act="badges-all" style="margin-top:10px">${en ? 'Show all badges' : 'Alle Abzeichen ansehen'}</button></div>`;
+}
+function badgesAll() {
+  const all = computeBadges(), en = LANG === 'en';
+  const body = BADGE_CATS().map(([c, l]) => {
+    let list = all.filter(b => b.cat === c); if (!list.length) return '';
+    if (c === 'ex') { const by = {}; list.forEach(b => { (by[b.exId] = by[b.exId] || []).push(b); }); list = Object.values(by).map(arr => arr.filter(b => b.at).pop() || arr[0]); }
+    const won = list.filter(b => b.at).length;
+    return `<div class="bdg-cat"><div class="bdg-h">${l}<span>${won}/${list.length}</span></div>${c === 'bw' && !PREF.bw ? `<button class="linkbtn small" data-act="badge-bw">${en ? 'Enter your body weight →' : 'Körpergewicht eintragen →'}</button>` : ''}<div class="bdg-grid">${list.map(badgeTile).join('')}</div></div>`;
+  }).join('');
+  const bg = document.createElement('div'); bg.className = 'modal-bg bdg-full';
+  bg.innerHTML = `<div class="modal"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${en ? 'Badges' : 'Abzeichen'} · ${all.filter(b => b.at).length}/${all.length}</h3><button class="btn sm" data-close>${en ? 'Close' : 'Schließen'}</button></div><div class="bdg-scroll">${body}</div></div>`;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-close]')) bg.remove(); });
+  document.body.appendChild(bg);
+}
+function badgeDetail(id) {
+  const b = computeBadges().find(x => x.id === id); if (!b) return;
+  const en = LANG === 'en', d = b.at ? new Date(b.at + 'T12:00:00').toLocaleDateString(en ? 'en-GB' : 'de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal bdg-detail ${b.at ? 'won' : 'lock'}"><div class="bdg-big">${badgeSVG(b, true)}</div><h3>${esc(b.name)}</h3><div class="t2 small">${esc(b.desc)}</div>
+    ${b.at ? `<div class="bdg-date">🏅 ${en ? 'Earned on' : 'Erreicht am'} ${d}</div>` : `<div class="bdg-bar big"><i style="width:${Math.round(b.prog * 100)}%"></i></div><div class="small muted" style="margin-top:6px">${esc(b.left || Math.round(b.prog * 100) + ' %')}</div>`}
+    <div class="acts"><button class="btn primary" data-r>${en ? 'Nice!' : 'Weiter so!'}</button></div></div>`;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-r]')) bg.remove(); });
+  document.body.appendChild(bg);
+}
+function celebrate(list) {
+  const en = LANG === 'en', b = list[0];
+  const bg = document.createElement('div'); bg.className = 'modal-bg bdg-cele';
+  const conf = Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${['#ffd60a', '#3987e5', '#30a46c', '#ff6b6b', '#c084fc', '#ff9f0a'][i % 6]};animation-delay:${Math.random() * .6}s;animation-duration:${1.6 + Math.random() * 1.2}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join('');
+  bg.innerHTML = `<div class="confetti">${conf}</div><div class="modal bdg-detail won"><div class="bdg-kicker">${en ? 'New badge!' : 'Neues Abzeichen!'}</div><div class="bdg-big pop">${badgeSVG(b, true)}</div><h3>${esc(b.name)}</h3><div class="t2 small">${esc(b.desc)}</div>
+    ${list.length > 1 ? `<div class="small muted" style="margin-top:8px">${en ? `+${list.length - 1} more` : `+${list.length - 1} weitere`}</div>` : ''}<div class="acts"><button class="btn primary" data-r>${en ? 'Awesome!' : 'Stark!'}</button></div></div>`;
+  bg.addEventListener('click', e => { if (e.target.closest('[data-r]') || e.target === bg) { bg.remove(); if (list.length > 1) setTimeout(() => celebrate(list.slice(1)), 250); } });
+  document.body.appendChild(bg);
+}
+let badgeT = null;
+function checkBadges() {
+  clearTimeout(badgeT);
+  badgeT = setTimeout(() => {
+    if (document.querySelector('.modal-bg')) return;
+    const won = computeBadges().filter(b => b.at), seen = lsGet('tt_badges');
+    if (!seen) { const s = {}; won.forEach(b => s[b.id] = 1); lsSet('tt_badges', s); return; }
+    const fresh = won.filter(b => !seen[b.id]); if (!fresh.length) return;
+    fresh.forEach(b => seen[b.id] = 1); lsSet('tt_badges', seen);
+    const order = { elite: 0, diamond: 1, gold: 2, silver: 3, bronze: 4 };
+    celebrate(fresh.sort((a, b) => order[a.tier] - order[b.tier]).slice(0, 3));
+  }, 700);
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act="badge"],[data-act="badges-all"],[data-act="badge-bw"]'); if (!t) return;
+  e.stopPropagation();
+  if (t.dataset.act === 'badge') badgeDetail(t.dataset.id);
+  else if (t.dataset.act === 'badges-all') badgesAll();
+  else { document.querySelectorAll('.bdg-full').forEach(x => x.remove()); S.settings = true; render(); setTimeout(() => { const i = document.querySelector('[data-pref="bw"]'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } }, 100); }
+}, true);
+
+function viewProgress() { return badgesSection() + viewProgress0(); }
+function viewProgress0() {
   const used = new Map();
   Object.values(S.days).forEach(d => d.entries.forEach(e => { if (validSets(e.sets).length && !used.has(e.exId)) used.set(e.exId, exById(e.exId) || { id: e.exId, name: e.name, icon: e.icon }); }));
   const list = [...used.values()];
@@ -2748,7 +2973,7 @@ document.addEventListener('click', async ev => {
     }
   }
 });
-function backupText() { return JSON.stringify({ app: 'trainingstagebuch', v: 1, prefs: { name: PREF.name, accent: PREF.accent, theme: PREF.theme, lang: PREF.lang }, custom: S.custom, hidden: S.hidden, routines: S.routines, plan: S.plan, days: S.days }); }
+function backupText() { return JSON.stringify({ app: 'trainingstagebuch', v: 1, prefs: { name: PREF.name, accent: PREF.accent, theme: PREF.theme, lang: PREF.lang, bw: PREF.bw }, custom: S.custom, hidden: S.hidden, routines: S.routines, plan: S.plan, days: S.days }); }
 function lastBackupText() { const t = lsGet('tt_lastBackup'); if (!t) return 'Noch kein Backup gesichert.'; const d = Math.floor((Date.now() - t) / 864e5); return 'Letztes Backup: ' + (d === 0 ? 'heute' : d === 1 ? 'gestern' : 'vor ' + d + ' Tagen'); }
 function importBackup(v) {
   try {
@@ -2764,6 +2989,8 @@ function importBackup(v) {
     if (['auto', 'light', 'dark'].includes(pf.theme)) PREF.theme = pf.theme;
     if (typeof pf.name === 'string' && pf.name.trim() && !(PREF.name || '').trim()) PREF.name = pf.name.slice(0, 30);
     if (['auto', 'de', 'en'].includes(pf.lang)) PREF.lang = pf.lang;
+    if (+pf.bw >= 30 && +pf.bw <= 300) PREF.bw = +pf.bw;
+    try { localStorage.removeItem('tt_badges'); } catch (e) {}
     savePrefs();
     Store.saveSettings(); render(); toast(`${n} Trainingstage importiert`);
     if ((PREF.lang || 'auto') !== langBefore) setTimeout(() => location.reload(), 1200);
@@ -2795,6 +3022,7 @@ function addSet(focus) {
 }
 document.addEventListener('input', ev => {
   if (ev.target.dataset.pref === 'name') { PREF.name = ev.target.value.slice(0, 30); savePrefs(); return; }
+  if (ev.target.dataset.pref === 'bw') { const v = num(ev.target.value); PREF.bw = v && v >= 30 && v <= 300 ? Math.round(v * 10) / 10 : ''; savePrefs(); return; }
   if (ev.target.id === 'exq') { S.q = ev.target.value; $('#exlist').innerHTML = exListHTML(S.day); return; }
   if (ev.target.id === 'pickq') { S.pq = ev.target.value; $('#picklist').innerHTML = pickListHTML(); return; }
   if (ev.target.dataset.rin === 'name') { const r = routineById(S.redit); if (r) { r.name = ev.target.value; saveRoutinesSoon(); } return; }
@@ -2864,7 +3092,7 @@ function hintsHTML() {
       `<button class="btn sm primary" data-act="backup-file">${en ? 'Save backup' : 'Backup sichern'}</button>`);
   return out;
 }
-{ const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); }; }
+{ const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); try { checkBadges(); } catch (e) {} }; }
 document.addEventListener('click', e => { const o = e.target.closest('[data-os]'); if (!o) return; const H = lsGet('tt_hints') || {}; H.os = o.dataset.os; lsSet('tt_hints', H); render(); });
 document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
 /* ================= Verkauf: Testphase + Lizenz (Polar) ================= */
