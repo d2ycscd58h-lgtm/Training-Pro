@@ -230,6 +230,9 @@
 
   /* icons */
   svg.ex{display:block;overflow:visible}
+  .os-tabs{display:flex;gap:6px;margin:8px 0}
+  .os-tab{flex:1;padding:6px 8px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--text-2);font:inherit;font-size:13px;font-weight:600}
+  .os-tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
   img.ex{display:block;width:100%;height:100%;object-fit:cover;border-radius:12px}
   .chip img.ex{width:40px;height:40px;border-radius:10px}
   .icon-pick img.ex{aspect-ratio:1;height:auto;border-radius:9px}
@@ -359,7 +362,7 @@ const norm = s => String(s || '').trim().toLowerCase();
 const e1rm = (w, r) => (r == null || r <= 0) ? null : (w == null || w <= 0 ? null : (r === 1 ? w : w * (1 + r / 30)));
 const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
-// ---- Sprache: automatisch nach iPhone-Einstellung, umstellbar in den Einstellungen ----
+// ---- Sprache: automatisch nach Handy-Einstellung, umstellbar in den Einstellungen ----
 const LANG = (() => { const p = lsGet('tt_prefs') || {}; if (p.lang === 'de' || p.lang === 'en') return p.lang; return (navigator.language || 'de').toLowerCase().startsWith('de') ? 'de' : 'en'; })();
 const LOC = LANG === 'de' ? 'de-DE' : ((navigator.language || '').toLowerCase().startsWith('en') ? navigator.language : 'en-GB');
 const DEC = LANG === 'de' ? ',' : '.';
@@ -861,11 +864,11 @@ const UI_EN = {
   'Tippe auf einen vergangenen Tag, um zu sehen, was du trainiert hast.': 'Tap a past day to see what you trained.',
   'Tippe auf einen zukünftigen Tag, um ein Training zu planen.': 'Tap a future day to plan a workout.', 'Umrandete Kürzel sind geplant.': 'Outlined tags are planned.',
   'In diesem Monat noch kein Training eingetragen.': 'No workouts logged this month yet.',
-  '📲 Die Übernahme in den iPhone-Kalender geht in der App auf deinem Startbildschirm.': '📲 Adding to the iPhone calendar works in the app on your home screen.',
+  '📲 Die Übernahme in den Handy-Kalender geht in der App auf deinem Startbildschirm.': '📲 Adding to your phone calendar works in the app on your home screen.',
   'Vormonat': 'Previous month', 'Nächster Monat': 'Next month', 'Ändern': 'Change', 'Plan löschen': 'Delete plan', 'Training planen': 'Plan workout', 'Geplantes Training ändern': 'Change planned workout',
   'Was trainierst du?': 'What are you training?', 'Uhrzeit': 'Time', 'Erinnerung': 'Reminder', 'Keine': 'None', '15 min vorher': '15 min before', '30 min vorher': '30 min before', '1 Std. vorher': '1 h before', '2 Std. vorher': '2 h before',
   'Wiederholen': 'Repeat', 'Nur dieser Tag': 'This day only', 'Jede Woche, 4 Wochen': 'Weekly, 4 weeks', 'Jede Woche, 8 Wochen': 'Weekly, 8 weeks', 'Jede Woche, 12 Wochen': 'Weekly, 12 weeks',
-  'Speichern': 'Save', 'Tag öffnen': 'Open day', '▶ Jetzt starten': '▶ Start now', '📲 In iPhone-Kalender': '📲 Add to iPhone calendar',
+  'Speichern': 'Save', 'Tag öffnen': 'Open day', '▶ Jetzt starten': '▶ Start now', '📲 In Handy-Kalender': '📲 Add to phone calendar',
   'Name der Routine': 'Routine name', '+ Übungen hinzufügen': '+ Add exercises', 'Löschen': 'Delete', 'z. B. Brust-Tag': 'e.g. Chest day', 'Nach oben': 'Move up', 'Nach unten': 'Move down', 'Entfernen': 'Remove',
   'Routine': 'Routine', 'Noch keine Übungen.': 'No exercises yet.', 'Übernommen aus deinem heutigen Training – passe sie einfach an.': 'Taken from today\'s workout – adjust as you like.',
   '🔍 Übung suchen': '🔍 Search exercises', '▶ Routine starten': '▶ Start routine', 'Bearbeiten': 'Edit', 'Nichts gefunden.': 'Nothing found.',
@@ -874,7 +877,7 @@ const UI_EN = {
   'Diese Woche': 'This week', 'Letzte 30 Tage': 'Last 30 days', 'Gesamt': 'Total', 'Tag löschen': 'Delete day', 'Daten': 'Data',
   'Hier erscheinen deine Trainingstage.': 'Your workout days will appear here.',
   'Deine Einträge liegen gerade nur auf diesem Gerät. Lege ab und zu ein Backup an.': 'Your entries are only on this device right now. Make a backup now and then.',
-  'Deine Einträge sind nur auf diesem iPhone gespeichert. Sichere ab und zu ein Backup, z. B. in der Dateien-App oder in iCloud Drive.': 'Your entries are only stored on this iPhone. Save a backup now and then, e.g. in the Files app or iCloud Drive.',
+  'Deine Einträge sind nur auf diesem Handy gespeichert. Sichere ab und zu ein Backup, z. B. in iCloud Drive (iPhone) oder Google Drive (Android).': 'Your entries are only stored on this phone. Save a backup now and then, e.g. in iCloud Drive (iPhone) or Google Drive (Android).',
   'Deine Einträge werden privat in deinem Claude-Konto gespeichert – auf jedem Gerät, auf dem du angemeldet bist.': 'Your entries are stored privately in your Claude account – on every device where you\'re signed in.',
   'Backup sichern': 'Save backup', 'Backup laden': 'Load backup', 'Backup kopieren': 'Copy backup', 'Backup einfügen': 'Paste backup', 'Noch kein Backup gesichert.': 'No backup saved yet.',
   'Einträge aus dem Backup werden ergänzt. Bereits vorhandene Tage bleiben unverändert.': 'Entries from the backup are added. Existing days stay unchanged.',
@@ -883,7 +886,7 @@ const UI_EN = {
   'Sobald du Sätze eingetragen hast, siehst du hier deine Steigerung pro Übung.': 'Once you\'ve logged sets, you\'ll see your progress per exercise here.',
   'Für diese Kennzahl fehlen noch Werte.': 'No values for this metric yet.',
   'Dein Name': 'Your name', 'Farbe': 'Color', 'Ändert Knöpfe, Bilder, Ziele und Diagramme.': 'Changes buttons, images, goals and charts.', 'Design': 'Appearance',
-  'Automatisch': 'Automatic', 'Hell': 'Light', 'Dunkel': 'Dark', '„Automatisch“ folgt der Einstellung deines iPhones.': '“Automatic” follows your iPhone setting.', 'Vorschau': 'Preview', 'Start': 'Start',
+  'Automatisch': 'Automatic', 'Hell': 'Light', 'Dunkel': 'Dark', '„Automatisch“ folgt der Einstellung deines Handys.': '“Automatic” follows your phone setting.', 'Vorschau': 'Preview', 'Start': 'Start',
   'Backup & Daten (im Verlauf)': 'Backup & data (in History)', 'Dein Vorname': 'Your first name', 'Sprache': 'Language', 'Deutsch': 'Deutsch', 'English': 'English',
   'Blau': 'Blue', 'Grün': 'Green', 'Orange': 'Orange', 'Lila': 'Purple', 'Pink': 'Pink', 'Rot': 'Red', 'Türkis': 'Teal', 'Gold': 'Gold',
   'Neue Übung': 'New exercise', 'Übung bearbeiten': 'Edit exercise', 'Name': 'Name', 'Bild auswählen': 'Choose image', 'Foto aufnehmen oder wählen': 'Take or choose a photo', 'Foto konnte nicht geladen werden': 'Could not load the photo', 'z. B. Hammercurls': 'e.g. Hammer curls',
@@ -911,7 +914,7 @@ const RX_EN = [
   [/^(\d+) Übungen? in dieser Reihenfolge$/, (m, n) => n + (n === '1' ? ' exercise' : ' exercises') + ' in this order'],
   [/^Tippe Übungen an, um sie zu „(.*)“ hinzuzufügen\. Die Nummer zeigt die Reihenfolge\.$/, 'Tap exercises to add them to “$1”. The number shows the order.'],
   [/^Geplante Trainings \((\d+)\)$/, 'Planned workouts ($1)'],
-  [/^📲 Alle (\d+) Trainings in iPhone-Kalender$/, '📲 Add all $1 workouts to iPhone calendar'], [/^📲 Training in iPhone-Kalender$/, '📲 Add workout to iPhone calendar'],
+  [/^📲 Alle (\d+) Trainings in Handy-Kalender$/, '📲 Add all $1 workouts to phone calendar'], [/^📲 Training in Handy-Kalender$/, '📲 Add workout to phone calendar'],
   [/^🔍 Übung suchen \((\d+) Übungen\)$/, '🔍 Search exercises ($1)'],
   [/^Keine Übung „(.*)“ gefunden\.$/, 'No exercise “$1” found.'],
   [/^Ausführung (.*)$/, 'How to: $1'],
@@ -1175,7 +1178,7 @@ function viewSettings() {
     <div class="small muted" style="margin-top:6px">Ändert Knöpfe, Bilder, Ziele und Diagramme.</div>
     <h2>Design</h2>
     <div class="seg themeseg">${[['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) => `<button data-act="theme" data-v="${v}" class="${PREF.theme === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-    <div class="small muted" style="margin-top:6px">„Automatisch“ folgt der Einstellung deines iPhones.</div>
+    <div class="small muted" style="margin-top:6px">„Automatisch“ folgt der Einstellung deines Handys.</div>
     <h2>Sprache</h2>
     <div class="seg themeseg">${[['auto', 'Automatisch'], ['de', 'Deutsch'], ['en', 'English']].map(([v, l]) => `<button data-act="lang" data-v="${v}" class="${(PREF.lang || 'auto') === v ? 'on' : ''}">${l}</button>`).join('')}</div>
     <h2>Vorschau</h2>
@@ -1426,7 +1429,7 @@ function viewHistory() {
   });
   h += `<h2>Daten</h2><div class="card"><div class="small t2" style="margin-bottom:10px">${Store.mode === 'cloud'
     ? 'Deine Einträge werden privat in deinem Claude-Konto gespeichert – auf jedem Gerät, auf dem du angemeldet bist.'
-    : STANDALONE ? 'Deine Einträge sind nur auf diesem iPhone gespeichert. Sichere ab und zu ein Backup, z. B. in der Dateien-App oder in iCloud Drive.' : 'Deine Einträge liegen gerade nur auf diesem Gerät. Lege ab und zu ein Backup an.'}</div>
+    : STANDALONE ? 'Deine Einträge sind nur auf diesem Handy gespeichert. Sichere ab und zu ein Backup, z. B. in iCloud Drive (iPhone) oder Google Drive (Android).' : 'Deine Einträge liegen gerade nur auf diesem Gerät. Lege ab und zu ein Backup an.'}</div>
     ${STANDALONE ? `<div class="row" style="margin-bottom:8px"><button class="btn sm grow primary" data-act="backup-file">Backup sichern</button><button class="btn sm grow" data-act="restore-file">Backup laden</button></div>
     <div class="small muted" style="margin-bottom:8px">${lastBackupText()}</div>` : ''}
     <div class="row"><button class="btn sm grow" data-act="backup">Backup kopieren</button><button class="btn sm grow" data-act="restore">Backup einfügen</button></div></div>`;
@@ -1549,8 +1552,8 @@ function icsText(keys) {
     ...ev, 'END:VCALENDAR'].join('\r\n');
 }
 function calExportButtons(n) {
-  if (!STANDALONE) return `<div class="small muted" style="margin-top:10px">📲 Die Übernahme in den iPhone-Kalender geht in der App auf deinem Startbildschirm.</div>`;
-  return `<button class="btn primary block" data-act="ics-all" style="margin-top:10px">📲 ${n === 1 ? 'Training' : 'Alle ' + n + ' Trainings'} in iPhone-Kalender</button>`;
+  if (!STANDALONE) return `<div class="small muted" style="margin-top:10px">📲 Die Übernahme in den Handy-Kalender geht in der App auf deinem Startbildschirm.</div>`;
+  return `<button class="btn primary block" data-act="ics-all" style="margin-top:10px">📲 ${n === 1 ? 'Training' : 'Alle ' + n + ' Trainings'} in Handy-Kalender</button>`;
 }
 async function exportICS(keys) {
   if (!keys.length) { toast('Keine geplanten Trainings'); return; }
@@ -2620,7 +2623,7 @@ document.addEventListener('click', async ev => {
         body: `<div class="small muted">${fmtKey(k, { weekday: 'long', day: '2-digit', month: 'long' })} · ${esc(P.t || '')} Uhr${P.a ? ' · Erinnerung ' + (REMIND.find(x => x[0] === +P.a) || [0, ''])[1] : ''}</div>
           ${list ? `<div style="max-height:34vh;overflow:auto;margin:8px 0">${list}</div>` : ''}
           <div style="display:grid;gap:8px;margin-top:10px">${isToday ? '<button class="btn primary block" data-ch="start">▶ Jetzt starten</button>' : ''}
-          ${STANDALONE ? '<button class="btn block" data-ch="ics">📲 In iPhone-Kalender</button>' : ''}
+          ${STANDALONE ? '<button class="btn block" data-ch="ics">📲 In Handy-Kalender</button>' : ''}
           <button class="btn block" data-ch="edit">Ändern</button><button class="btn block danger" data-ch="del">Plan löschen</button></div>`,
         onOpen: bg => bg.addEventListener('click', e => { const b = e.target.closest('[data-ch]'); if (b) { bg.remove(); res(b.dataset.ch); } }) }).then(() => res(null)));
       if (choice === 'edit') { if (await editPlan(k, P)) render(); }
@@ -2848,7 +2851,13 @@ function hintsHTML() {
   const box = (id, txt, btn) => `<div class="hint-box"><div>${txt}</div><div class="hint-acts">${btn || ''}<button class="linkbtn small" data-hint="${id}">${en ? 'Later' : 'Später'}</button></div></div>`;
   let out = '';
   if (!installed && now - (H.inst || 0) > 7 * 864e5)
-    out += box('inst', en ? '<b>Add the app to your Home Screen</b> (Share → “Add to Home Screen”). Otherwise your browser may delete your entries after a few days without use.' : '<b>Leg die App auf deinen Home-Bildschirm</b> (Teilen → „Zum Home-Bildschirm“). Sonst kann der Browser deine Einträge nach einigen Tagen ohne Nutzung löschen.');
+  { const os = H.os || (/android/i.test(navigator.userAgent) ? 'and' : 'ios');
+    const tab = (k, t) => `<button class="os-tab ${os === k ? 'on' : ''}" data-os="${k}">${t}</button>`;
+    const how = os === 'and'
+      ? (en ? 'In Chrome: menu <b>⋮</b> → “Add to Home screen” or “Install app”.' : 'In Chrome: Menü <b>⋮</b> → „Zum Startbildschirm hinzufügen“ oder „App installieren“.')
+      : (en ? 'In Safari: <b>Share</b> → “Add to Home Screen”.' : 'In Safari: <b>Teilen</b> → „Zum Home-Bildschirm“.');
+    out += box('inst', (en ? '<b>Add the app to your home screen.</b> ' : '<b>Leg die App auf deinen Startbildschirm.</b> ') + `<div class="os-tabs">${tab('ios', 'iPhone')}${tab('and', 'Android')}</div>` + how +
+      (en ? ' Otherwise your browser may delete your entries after a few days without use.' : ' Sonst kann der Browser deine Einträge nach einigen Tagen ohne Nutzung löschen.')); }
   const days = sortedDayKeys().length, lb = lsGet('tt_lastBackup');
   if (days >= 3 && now - (lb || 0) > 14 * 864e5 && now - (H.bak || 0) > 14 * 864e5)
     out += box('bak', en ? `<b>Time for a backup.</b> ${lb ? 'Your last backup is more than 14 days old.' : 'You have not saved a backup yet.'}` : `<b>Zeit für ein Backup.</b> ${lb ? 'Dein letztes Backup ist älter als 14 Tage.' : 'Du hast noch kein Backup gesichert.'}`,
@@ -2856,6 +2865,7 @@ function hintsHTML() {
   return out;
 }
 { const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); }; }
+document.addEventListener('click', e => { const o = e.target.closest('[data-os]'); if (!o) return; const H = lsGet('tt_hints') || {}; H.os = o.dataset.os; lsSet('tt_hints', H); render(); });
 document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
 /* ================= Verkauf: Testphase + Lizenz (Polar) ================= */
 // >>> Diese Werte aus dem Polar-Dashboard eintragen <<<
@@ -2887,7 +2897,7 @@ const Lic = {
     key = (key || '').trim();
     if (key.length < 8) throw new Error(T('Bitte gib deinen Lizenzcode ein.', 'Please enter your license key.'));
     let res;
-    try { res = await this.call('activate', { key, label: (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : T('Gerät', 'Device')) + ' ' + new Date().toISOString().slice(0, 10) }); }
+    try { res = await this.call('activate', { key, label: (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : T('Gerät', 'Device')) + ' ' + new Date().toISOString().slice(0, 10) }); }
     catch (e) { throw NO_NET(); }
     const j = res.j;
     if (res.http >= 400 || !j.id) {

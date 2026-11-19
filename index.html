@@ -76,6 +76,7 @@
     .grid,.steps{grid-template-columns:1fr}
     .hide-m{display:none}
   }
+.steps[hidden]{display:none!important}.os-switch{display:inline-flex;gap:4px;padding:4px;border-radius:14px;background:var(--surface,#1b1d21);border:1px solid var(--line,#2c2f35);margin:6px 0 18px}.os-switch button{border:0;border-radius:10px;padding:9px 20px;font:inherit;font-weight:600;background:transparent;color:inherit;opacity:.7;cursor:pointer}.os-switch button.on{background:#3987e5;color:#fff;opacity:1}
 </style>
 </head>
 <body>
@@ -92,7 +93,7 @@
       <a class="btn p" href="app.html">24 Stunden gratis testen</a>
       <a class="btn" href="#preis">Einmalig 4,99 €</a>
     </div>
-    <div class="note">Kein Abo · Kein Konto · Deine Daten bleiben auf deinem iPhone</div>
+    <div class="note">Kein Abo · Kein Konto · Deine Daten bleiben auf deinem Handy</div>
   </div>
   <div class="phone"><img src="shot-exercise.png" alt="Übung mit Ziel für heute"></div>
 </div></div>
@@ -105,7 +106,7 @@
     <div class="card"><div class="ic">🏋️</div><h3>Über 100 Übungen</h3><p>Jede mit eigenem Bild, Zeitlupen-Animation der Bewegung, markierten Knackpunkten und Tipps zu Griff und Stand.</p></div>
     <div class="card"><div class="ic">📋</div><h3>Routinen</h3><p>Brust-Tag, Rücken-Tag, Bein-Tag: einmal anlegen, beim Training nur noch abarbeiten.</p></div>
     <div class="card"><div class="ic">📈</div><h3>Fortschritt</h3><p>Diagramme für Gewicht, geschätztes 1RM und Volumen. Neue Bestwerte werden markiert.</p></div>
-    <div class="card"><div class="ic">📅</div><h3>Planen & erinnern</h3><p>Trainingstage planen und mit Erinnerung in den iPhone-Kalender übernehmen.</p></div>
+    <div class="card"><div class="ic">📅</div><h3>Planen & erinnern</h3><p>Trainingstage planen und mit Erinnerung in den Kalender deines Handys übernehmen.</p></div>
     <div class="card"><div class="ic">🔒</div><h3>Privat & offline</h3><p>Alles bleibt auf deinem Gerät, funktioniert auch ohne Netz im Keller-Gym. Backup jederzeit als Datei.</p></div>
   </div>
 </div></section>
@@ -123,13 +124,20 @@
 </div></section>
 
 <section><div class="w">
-  <h2>In 30 Sekunden auf deinem iPhone</h2>
-  <p class="sub">Kein App Store nötig – die App läuft direkt vom Home-Bildschirm, wie jede andere App.</p>
-  <div class="steps">
+  <h2>In 30 Sekunden auf deinem Handy</h2>
+  <p class="sub">Kein App Store nötig – die App läuft direkt vom Startbildschirm, wie jede andere App. Für iPhone und Android.</p>
+  <div class="os-switch" role="tablist"><button type="button" data-os="ios" class="on">iPhone</button><button type="button" data-os="and">Android</button></div>
+  <div class="steps" data-steps="ios">
     <div class="card"><h3>In Safari öffnen</h3><p>Tippe auf „Gratis testen“. Die App öffnet sich in Safari.</p></div>
     <div class="card"><h3>Teilen → Zum Home-Bildschirm</h3><p>Unten auf das Teilen-Symbol tippen und „Zum Home-Bildschirm“ wählen.</p></div>
     <div class="card"><h3>Loslegen</h3><p>App-Symbol antippen, Namen eingeben, trainieren. 24 Stunden lang alles gratis.</p></div>
   </div>
+  <div class="steps" data-steps="and" hidden>
+    <div class="card"><h3>In Chrome öffnen</h3><p>Tippe auf „Gratis testen“. Die App öffnet sich in Chrome.</p></div>
+    <div class="card"><h3>⋮ → Zum Startbildschirm</h3><p>Oben rechts auf die drei Punkte tippen und „Zum Startbildschirm hinzufügen“ oder „App installieren“ wählen.</p></div>
+    <div class="card"><h3>Loslegen</h3><p>App-Symbol antippen, Namen eingeben, trainieren. 24 Stunden lang alles gratis.</p></div>
+  </div>
+  <script>(function(){var w=document.currentScript.parentNode,set=function(k){w.querySelectorAll('[data-os]').forEach(function(b){b.classList.toggle('on',b.dataset.os===k)});w.querySelectorAll('[data-steps]').forEach(function(d){d.hidden=d.dataset.steps!==k})};w.querySelectorAll('[data-os]').forEach(function(b){b.addEventListener('click',function(){set(b.dataset.os)})});if(/android/i.test(navigator.userAgent))set('and')})();</script>
 </div></section>
 
 <section id="preis"><div class="w">
@@ -154,7 +162,7 @@
   <details><summary>Wie schalte ich die App nach dem Kauf frei?</summary><p>Du bekommst direkt nach dem Kauf eine E-Mail mit deinem Lizenzcode. Öffne die App, tippe auf „Freischalten“ (oder Zahnrad → Lizenz) und füge den Code ein. Fertig.</p></details>
   <details><summary>Wo werden meine Trainingsdaten gespeichert?</summary><p>Nur auf deinem Gerät. Es gibt kein Konto und keinen Server, der deine Trainings sieht. Über „Backup sichern“ kannst du jederzeit eine Datei in iCloud Drive oder der Dateien-App ablegen.</p></details>
   <details><summary>Funktioniert die App ohne Internet?</summary><p>Ja. Nach dem ersten Öffnen läuft sie komplett offline. Internet brauchst du nur einmal zum Freischalten.</p></details>
-  <details><summary>Läuft das auch auf Android oder am PC?</summary><p>Ja, die App läuft in jedem modernen Browser. Optimiert ist sie fürs iPhone.</p></details>
+  <details><summary>Läuft das auch auf Android oder am PC?</summary><p>Ja. Die App läuft auf iPhone und Android genauso und auch am PC in jedem modernen Browser.</p></details>
   <details><summary>Was passiert nach der Testphase?</summary><p>Nach 24 Stunden wird die App gesperrt, bis du sie freischaltest. Deine Einträge bleiben erhalten – und du kannst jederzeit ein Backup sichern.</p></details>
   <details><summary>Ersetzt die App einen Trainer oder Arzt?</summary><p>Nein. Die Animationen und Tipps helfen dir bei der Ausführung, ersetzen aber keine ärztliche oder trainingsfachliche Beratung. Trainiere nur, wenn du gesund bist, und brich bei Schmerzen, Schwindel oder Unwohlsein ab. Bei Vorerkrankungen oder Unsicherheit lass dich vorher ärztlich beraten.</p></details>
   <details><summary>Kann ich mein Geld zurückbekommen?</summary><p>Wenn etwas nicht passt, schreib uns innerhalb von 14 Tagen über das Impressum – wir kümmern uns darum.</p></details>
