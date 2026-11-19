@@ -230,6 +230,7 @@
 
   /* icons */
   svg.ex{display:block;overflow:visible}
+  .bw-note{margin:0 4px 10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;line-height:1.4;color:var(--text-2)}
   .bdg-card{padding:16px}.bdg-count{font-weight:700;color:var(--accent);font-size:15px}
   .bdg-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
   .bdg{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:4px 2px;color:inherit;font:inherit;cursor:pointer}
@@ -1096,7 +1097,7 @@ function previous(exId, beforeKey) {
 }
 const workSets = sets => validSets(sets).filter(s => !s.wu);
 // Körpergewichts-Übungen: Anteil des Körpergewichts, der bewegt wird (Richtwerte). -1 = Unterstützung wird abgezogen.
-const BW_EX = { pullup: 1, chinup: 1, dips: 1, assistpullup: -1, benchdip: 0.7, pushup: 0.65 };
+const BW_EX = { pullup: 1, chinup: 1, dips: 1, assistpullup: -1, benchdip: 0.7, pushup: 0.65, backext: 0.5, lunge: 0.8, walklunge: 0.8, bulgarian: 0.85, stepup: 0.85, hanglegraise: 0.35 };
 function bwNote(id) {
   const f = BW_EX[id], bw = +PREF.bw || 0, en = LANG === 'en', kg = fmtNum(bw);
   if (!bw) return en ? 'Enter only the added weight. Add your body weight in the settings and it will count too.' : 'Ins Feld kommt nur das Zusatzgewicht. Trag in den Einstellungen dein Körpergewicht ein, dann zählt es mit.';
@@ -1384,6 +1385,7 @@ function viewExercise() {
     h += `<div class="target small t2">Erstes Mal – trag einfach ein, was du schaffst. Beim nächsten Mal siehst du hier dein Ziel.</div>`;
   }
   const rows = sets.length ? sets : [];
+  if (BW_EX[x.id] != null) h += `<div class="bw-note">⚖️ ${bwNote(x.id)}${+PREF.bw ? '' : ` <button class="linkbtn small" data-act="badge-bw">${LANG === 'en' ? 'Enter body weight' : 'Körpergewicht eintragen'}</button>`}</div>`;
   h += `<div class="small muted" style="margin:0 4px 6px">Tipp: Tippe auf die Satznummer, um einen Satz als <b>Aufwärmsatz (A)</b> zu markieren.</div><div class="card" style="padding:10px 12px 12px"><table class="sets"><thead><tr><th>Satz</th><th>Gewicht (kg)</th><th>Wdh.</th><th></th></tr></thead><tbody id="set-rows">`;
   rows.forEach((s, i) => { h += setRow(x.id, s, i, prev, best, rows); });
   h += `</tbody></table>
@@ -1393,7 +1395,6 @@ function viewExercise() {
     const vol = volume(sets, x.id), pvol = prev ? volume(prev.sets, x.id) : null;
     h += `<div class="row small t2" style="justify-content:space-between;padding:0 4px"><span>${tot.length} ${tot.length === 1 ? 'Satz' : 'Sätze'} · Volumen ${fmtNum(vol)} kg</span>
       ${pvol ? (vol > pvol ? `<span class="delta up">▲ ${fmtNum(vol - pvol)} kg mehr als letztes Mal</span>` : `<span class="muted">letztes Mal ${fmtNum(pvol)} kg</span>`) : ''}</div>`;
-    if (BW_EX[x.id] != null) h += `<div class="small muted" style="padding:4px 4px 0">${bwNote(x.id)}</div>`;
   }
   h += nextExButton(k, x.id);
   return h;
