@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Training">
 <meta name="theme-color" content="#121211">
 <title>Trainingstagebuch – App</title>
-<meta name="description" content="Trainingstagebuch: Sätze mit Gewicht und Wiederholungen eintragen, Ziel für jedes Training, über 100 Übungen mit Animation. 24 h gratis testen.">
+<meta name="description" content="Trainingstagebuch: Sätze mit Gewicht und Wiederholungen eintragen, Ziel für jedes Training, über 100 Übungen mit Animation. 7 Tage gratis testen.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
@@ -3102,7 +3102,7 @@ const LIC_CFG = {
   checkout: 'https://buy.polar.sh/polar_cl_HQlI0e8lITHFglq4iEA69gxeA8emvku4Bp97x3wLJ6V', // Checkout-Link
   orgId: 'e66f3cf2-e02a-42e9-8158-8092fcc6ae6a', // Settings → General → Organization ID (nur Codes dieser Organisation werden akzeptiert)
   price: '4,99 €',  // Anzeige in der App
-  trialHours: 24,   // Testphase in Stunden
+  trialHours: 168,  // Testphase in Stunden (7 Tage)
   recheckDays: 7    // so oft wird der Code online nachgeprüft (z. B. nach Rückerstattung)
 };
 const LIC_API = 'https://api.polar.sh/v1/customer-portal/license-keys/';
@@ -3155,6 +3155,7 @@ const Lic = {
   },
   fmtLeft() {
     const h = Math.max(0, this.left()) / 3600e3;
+    if (h >= 24) { const d = Math.ceil(h / 24); return T(`noch ${d} ${d === 1 ? 'Tag' : 'Tage'}`, `${d} day${d === 1 ? '' : 's'} left`); }
     return h >= 1 ? T(`noch ${Math.ceil(h)} Std.`, `${Math.ceil(h)} h left`) : T(`noch ${Math.max(1, Math.ceil(h * 60))} Min.`, `${Math.max(1, Math.ceil(h * 60))} min left`);
   },
   buy() { window.open(LIC_CFG.checkout, '_blank'); },
@@ -3168,7 +3169,7 @@ const Lic = {
       <div class="lic-h">${T('Willkommen!', 'Welcome!')}</div>
       <div class="lic-p">${T('Wie dürfen wir dich nennen?', 'What should we call you?')}</div>
       <input class="f" id="lic-name" placeholder="${T('Dein Vorname', 'Your first name')}" autocomplete="given-name" maxlength="30">
-      <div class="lic-p small">${T(`Du kannst die App ${LIC_CFG.trialHours} Stunden lang kostenlos und ohne Einschränkungen testen. Danach schaltest du sie mit einem Einmalkauf für ${LIC_CFG.price} dauerhaft frei – kein Abo.`, `You can try the app free with no limits for ${LIC_CFG.trialHours} hours. Then unlock it for good with a one-time purchase of ${LIC_CFG.price} – no subscription.`)}</div>
+      <div class="lic-p small">${T(`Du kannst die App ${LIC_CFG.trialHours / 24} Tage lang kostenlos und ohne Einschränkungen testen. Danach schaltest du sie mit einem Einmalkauf für ${LIC_CFG.price} dauerhaft frei – kein Abo.`, `You can try the app free with no limits for ${LIC_CFG.trialHours / 24} days. Then unlock it for good with a one-time purchase of ${LIC_CFG.price} – no subscription.`)}</div>
       <button class="btn primary block" data-lic="start">${T('Test starten', 'Start trial')}</button>
       <details class="lic-have"${haveKey ? ' open' : ''}><summary>${T('Ich habe schon einen Lizenzcode', 'I already have a license key')}</summary>${keyForm}</details></div>`;
     else if (kind === 'locked') ov.innerHTML = `<div class="lic-box">${logo}
