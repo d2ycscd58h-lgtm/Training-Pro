@@ -3096,6 +3096,10 @@ function hintsHTML() {
 { const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); try { checkBadges(); } catch (e) {} }; }
 document.addEventListener('click', e => { const o = e.target.closest('[data-os]'); if (!o) return; const H = lsGet('tt_hints') || {}; H.os = o.dataset.os; lsSet('tt_hints', H); render(); });
 document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
+// Cookiefreie Besucherzählung (GoatCounter) – nur auf der echten Seite, nicht in Vorschau/Tests
+const GC_URL = 'https://trainingstagebuch.goatcounter.com/count';
+(function () { if (!/github\.io$/.test(location.hostname)) return; const sc = document.createElement('script'); sc.async = true; sc.src = 'https://gc.zgo.at/count.js'; sc.dataset.goatcounter = GC_URL; document.head.appendChild(sc); })();
+function gcEvent(name) { try { if (window.goatcounter && goatcounter.count) goatcounter.count({ path: name, title: name, event: true }); } catch (e) {} }
 /* ================= Verkauf: Testphase + Lizenz (Polar) ================= */
 // >>> Diese Werte aus dem Polar-Dashboard eintragen <<<
 const LIC_CFG = {
@@ -3193,7 +3197,7 @@ const Lic = {
       if (a === 'start') {
         const n = (ov.querySelector('#lic-name').value || '').trim().slice(0, 30);
         if (n) { PREF.name = n; savePrefs(); }
-        this.st.trialStart = Date.now(); this.save(); ov.remove(); render(); return;
+        this.st.trialStart = Date.now(); this.save(); gcEvent('test-gestartet'); ov.remove(); render(); return;
       }
       if (a === 'act') {
         const err = ov.querySelector('#lic-err'); err.textContent = ''; b.disabled = true; b.textContent = T('Prüfe…', 'Checking…');
@@ -3201,7 +3205,7 @@ const Lic = {
           await this.activate(ov.querySelector('#lic-in').value);
           if (!this.st.trialStart) this.st.trialStart = Date.now(), this.save();
           const nm = ov.querySelector('#lic-name'); if (nm && nm.value.trim()) { PREF.name = nm.value.trim().slice(0, 30); savePrefs(); }
-          ov.remove(); render(); toast(T('Freigeschaltet – viel Spaß beim Training! 💪', 'Unlocked – enjoy your training! 💪'));
+          gcEvent('freigeschaltet'); ov.remove(); render(); toast(T('Freigeschaltet – viel Spaß beim Training! 💪', 'Unlocked – enjoy your training! 💪'));
         } catch (x) { err.textContent = x.message; b.disabled = false; b.textContent = T('Freischalten', 'Unlock'); }
       }
     });
