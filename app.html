@@ -230,6 +230,8 @@
 
   /* icons */
   svg.ex{display:block;overflow:visible}
+  .sw-btn{display:block;width:100%;margin-top:5px;padding:7px 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--accent);font:inherit;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+  .sw-btn.on{background:#e5484d;border-color:#e5484d;color:#fff}
   .bw-note{margin:0 4px 10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;line-height:1.4;color:var(--text-2)}
   .bdg-card{padding:16px}.bdg-count{font-weight:700;color:var(--accent);font-size:15px}
   .bdg-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
@@ -878,7 +880,7 @@ const UI_EN = {
   'Eigene Übungen': 'Custom exercises', 'Übung hinzufügen': 'Add exercise', 'Ausführung anzeigen': 'Show how to', 'Optionen': 'Options',
   'Ziel heute:': 'Today\'s goal:', '– Ziele für jeden Satz stehen unten': '– goals for each set are below',
   'Tipp: Tippe auf die Satznummer, um einen Satz als': 'Tip: tap the set number to mark a set as a', 'Aufwärmsatz (A)': 'warm-up set (A)', 'zu markieren.': '',
-  'Satz': 'Set', 'Gewicht (kg)': 'Weight (kg)', 'Wdh.': 'Reps', '+ Satz hinzufügen': '+ Add set', 'Fertig': 'Done', 'Satz löschen': 'Delete set',
+  'Satz': 'Set', 'Gewicht (kg)': 'Weight (kg)', 'Wdh.': 'Reps', 'Sek.': 'Sec.', 'Zusatz (kg)': 'Added (kg)', '+ Satz hinzufügen': '+ Add set', 'Fertig': 'Done', 'Satz löschen': 'Delete set',
   'Start drücken, wenn du loslegst': 'Press start when you begin', '▶ Start': '▶ Start', '■ Stopp': '■ Stop', 'Dauer heute (Minuten)': 'Duration today (minutes)',
   'Wird bei „Stopp“ automatisch ausgefüllt, du kannst es aber auch selbst eintragen.': 'Filled in automatically when you press “Stop” – or enter it yourself.',
   'Für frühere Tage die Minuten unten eintragen': 'For past days, enter the minutes below',
@@ -1097,7 +1099,12 @@ function previous(exId, beforeKey) {
 }
 const workSets = sets => validSets(sets).filter(s => !s.wu);
 // Körpergewichts-Übungen: Anteil des Körpergewichts, der bewegt wird (Richtwerte). -1 = Unterstützung wird abgezogen.
-const BW_EX = { pullup: 1, chinup: 1, dips: 1, assistpullup: -1, benchdip: 0.7, pushup: 0.65, backext: 0.5, lunge: 0.8, walklunge: 0.8, bulgarian: 0.85, stepup: 0.85, hanglegraise: 0.35 };
+const BW_EX = { pullup: 1, chinup: 1, dips: 1, assistpullup: -1, benchdip: 0.7, pushup: 0.65, backext: 0.5, lunge: 0.8, walklunge: 0.8, bulgarian: 0.85, stepup: 0.85, hanglegraise: 0.35, legraise: 0.3, crunch: 0.3, abroller: 0.5, glutebridge: 0.5, frogpump: 0.5, plank: 0.65, sideplank: 0.6 };
+// Halte-Übungen: statt Wiederholungen werden Sekunden gezählt
+const TIME_EX = { plank: 1, sideplank: 1 };
+const isTime = id => !!TIME_EX[id];
+// Vergleichswert eines Satzes: Kraft = geschätztes 1RM, Halten = Last × Sekunden (ohne Last: Sekunden)
+const scoreOf = (exId, w, r) => isTime(exId) ? (r == null ? null : (r || 0) * (effW(exId, w) || 1)) : e1rm(effW(exId, w), r);
 function bwNote(id) {
   const f = BW_EX[id], bw = +PREF.bw || 0, en = LANG === 'en', kg = fmtNum(bw);
   if (!bw) return en ? 'Enter only the added weight. Add your body weight in the settings and it will count too.' : 'Ins Feld kommt nur das Zusatzgewicht. Trag in den Einstellungen dein Körpergewicht ein, dann zählt es mit.';
@@ -1116,10 +1123,10 @@ const wuSets = sets => validSets(sets).filter(s => s.wu);
 function bestEver(exId, beforeKey) {
   let best = null;
   for (const k of Object.keys(S.days)) { if (k >= beforeKey) continue; const e = S.days[k].entries.find(x => x.exId === exId); if (!e) continue;
-    workSets(e.sets).forEach(s => { const v = e1rm(effW(exId, s.w), s.r) ?? (s.r || 0); if (best == null || v > best) best = v; }); }
+    workSets(e.sets).forEach(s => { const v = scoreOf(exId, s.w, s.r) ?? (s.r || 0); if (best == null || v > best) best = v; }); }
   return best;
 }
-const setsText = sets => validSets(sets).map(s => s.m != null ? fmtNum(s.m) + ' min' : (s.w != null ? fmtNum(s.w) + ' kg × ' : '') + (s.r ?? '–') + (s.wu ? ' (A)' : '')).join(' · ');
+const setsText = (sets, exId) => validSets(sets).map(s => s.m != null ? fmtNum(s.m) + ' min' : (s.w != null && (s.w || !isTime(exId)) ? fmtNum(s.w) + ' kg × ' : '') + (s.r ?? '–') + (isTime(exId) ? ' s' : '') + (s.wu ? ' (A)' : '')).join(' · ');
 const clock = sec => { sec = Math.max(0, Math.floor(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(x); };
 const hhmm = t => new Date(t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' });
 const fmtDur = ms => { const m = Math.round(ms / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + pad(m % 60) + ' min'; };
@@ -1179,8 +1186,8 @@ setInterval(() => { document.querySelectorAll('[data-timer]').forEach(el => { co
 const topSet = sets => (workSets(sets).length ? workSets(sets) : validSets(sets)).reduce((b, s) => { const v = e1rm(s.w, s.r) ?? (s.r || 0) / 1000; return !b || v > b.v ? { ...s, v } : b; }, null);
 const volume = (sets, exId) => workSets(sets).reduce((a, s) => a + (effW(exId, s.w) || 0) * (s.r || 0), 0);
 function suggestion(prev) {
-  const t = setTarget(workSets(prev.sets)[0]); if (!t) return '';
-  return `<b>${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} Wdh.</b> im 1. Satz <span class="small t2">– Ziele für jeden Satz stehen unten</span>`;
+  const t = setTarget(workSets(prev.sets)[0], prev.exId); if (!t) return '';
+  return `<b>${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} ${isTime(prev.exId) ? 'Sek.' : 'Wdh.'}</b> im 1. Satz <span class="small t2">– Ziele für jeden Satz stehen unten</span>`;
 }
 
 /* ================= Views ================= */
@@ -1379,22 +1386,27 @@ function viewExercise() {
     <button class="info-btn" data-act="ex-info" aria-label="Ausführung anzeigen">i</button><button class="icon-btn" data-act="ex-menu" aria-label="Optionen">${SV.dots}</button></div>
     ${timerHTML(k) ? `<div class="timerbar">${timerHTML(k)}</div>` : ''}`;
   if (prev) {
-    h += `<div class="target"><div class="small t2">Letztes Mal (${esc(fmtKey(prev.date, { day: '2-digit', month: '2-digit' }))}): ${esc(setsText(prev.sets))}</div>
+    h += `<div class="target"><div class="small t2">Letztes Mal (${esc(fmtKey(prev.date, { day: '2-digit', month: '2-digit' }))}): ${esc(setsText(prev.sets, x.id))}</div>
       <div style="margin-top:4px">Ziel heute: ${suggestion(prev)}</div></div>`;
   } else {
     h += `<div class="target small t2">Erstes Mal – trag einfach ein, was du schaffst. Beim nächsten Mal siehst du hier dein Ziel.</div>`;
   }
   const rows = sets.length ? sets : [];
   if (BW_EX[x.id] != null) h += `<div class="bw-note">⚖️ ${bwNote(x.id)}${+PREF.bw ? '' : ` <button class="linkbtn small" data-act="badge-bw">${LANG === 'en' ? 'Enter body weight' : 'Körpergewicht eintragen'}</button>`}</div>`;
-  h += `<div class="small muted" style="margin:0 4px 6px">Tipp: Tippe auf die Satznummer, um einen Satz als <b>Aufwärmsatz (A)</b> zu markieren.</div><div class="card" style="padding:10px 12px 12px"><table class="sets"><thead><tr><th>Satz</th><th>Gewicht (kg)</th><th>Wdh.</th><th></th></tr></thead><tbody id="set-rows">`;
+  h += `<div class="small muted" style="margin:0 4px 6px">Tipp: Tippe auf die Satznummer, um einen Satz als <b>Aufwärmsatz (A)</b> zu markieren.</div><div class="card" style="padding:10px 12px 12px"><table class="sets"><thead><tr><th>Satz</th><th>${isTime(x.id) ? 'Zusatz (kg)' : 'Gewicht (kg)'}</th><th>${isTime(x.id) ? 'Sek.' : 'Wdh.'}</th><th></th></tr></thead><tbody id="set-rows">`;
   rows.forEach((s, i) => { h += setRow(x.id, s, i, prev, best, rows); });
   h += `</tbody></table>
     <button class="btn primary block" data-act="add-set" style="margin-top:6px">+ Satz hinzufügen</button></div>`;
   const tot = validSets(sets);
   if (tot.length) {
+    if (isTime(x.id)) { const ts = ss => workSets(ss).reduce((a, q) => a + (q.r || 0), 0), cs = ts(sets), ps = prev ? ts(prev.sets) : null;
+      h += `<div class="row small t2" style="justify-content:space-between;padding:0 4px"><span>${tot.length} ${tot.length === 1 ? 'Satz' : 'Sätze'} · ${LANG === 'en' ? 'Total' : 'Gesamt'} ${clock(cs)} min</span>
+      ${ps ? (cs > ps ? `<span class="delta up">▲ ${cs - ps} s ${LANG === 'en' ? 'more than last time' : 'mehr als letztes Mal'}</span>` : `<span class="muted">${LANG === 'en' ? 'last time' : 'letztes Mal'} ${clock(ps)} min</span>`) : ''}</div>`;
+    } else {
     const vol = volume(sets, x.id), pvol = prev ? volume(prev.sets, x.id) : null;
     h += `<div class="row small t2" style="justify-content:space-between;padding:0 4px"><span>${tot.length} ${tot.length === 1 ? 'Satz' : 'Sätze'} · Volumen ${fmtNum(vol)} kg</span>
       ${pvol ? (vol > pvol ? `<span class="delta up">▲ ${fmtNum(vol - pvol)} kg mehr als letztes Mal</span>` : `<span class="muted">letztes Mal ${fmtNum(pvol)} kg</span>`) : ''}</div>`;
+    }
   }
   h += nextExButton(k, x.id);
   return h;
@@ -1422,8 +1434,9 @@ function viewCardio(x, k, sets, prev) {
 }
 // Zielvorgabe pro Satz aus dem letzten Training (doppelte Progression):
 // bis 11 Wdh. -> gleiches Gewicht, +1 Wdh.; ab 12 Wdh. -> mehr Gewicht, etwas weniger Wdh.
-function setTarget(p) {
+function setTarget(p, exId) {
   if (!p || p.r == null) return null;
+  if (isTime(exId)) return { w: p.w > 0 ? p.w : null, r: p.r + 5 };
   const r = p.r, w = p.w;
   if (w == null || w <= 0) return { w: null, r: r + 1 };
   const step = w >= 20 ? 2.5 : 1;
@@ -1431,23 +1444,37 @@ function setTarget(p) {
   return { w, r: r + 1 };
 }
 const prevSetFor = (prev, i) => prev && prev.sets.length ? (prev.sets[i] || prev.sets[prev.sets.length - 1]) : null;
+// Stoppuhr für Halte-Übungen (läuft unabhängig von der Trainingszeit)
+S.sw = lsGet('tt_sw') || null;
+const swOn = (exId, i) => S.sw && S.sw.day === S.day && S.sw.ex === exId && S.sw.i === i;
+const swBtn = (exId, i) => swOn(exId, i)
+  ? `<button class="sw-btn on" data-act="sw" data-i="${i}">■ <span data-sw>${clock((Date.now() - S.sw.t0) / 1000)}</span></button>`
+  : `<button class="sw-btn" data-act="sw" data-i="${i}">▶ ${LANG === 'en' ? 'Start' : 'Start'}</button>`;
+function swStop(save) {
+  const w = S.sw; if (!w) return; S.sw = null; lsSet('tt_sw', null);
+  if (!save) return;
+  const d = S.days[w.day], e = d && d.entries.find(x => x.exId === w.ex), st = e && e.sets[w.i]; if (!st) return;
+  st.r = Math.min(999, Math.max(1, Math.round((Date.now() - w.t0) / 1000))); touchDay(w.day); Store.saveDay(w.day);
+}
+setInterval(() => { if (!S.sw) return; const el = document.querySelector('[data-sw]'); if (el) { const sec = (Date.now() - S.sw.t0) / 1000; el.textContent = clock(sec); const inp = document.querySelector(`[data-in="r"][data-i="${S.sw.i}"]`); if (inp && document.activeElement !== inp) inp.value = Math.floor(sec); } }, 250);
 function setRow(exId, s, i, prev, best, all) {
   // Aufwärmsätze werden getrennt verglichen und bekommen kein Steigerungsziel
   const before = (all || []).slice(0, i);
   const wi = before.filter(x => !x.wu).length, ai = before.filter(x => x.wu).length;
   const prevW = prev ? workSets(prev.sets) : [], prevA = prev ? wuSets(prev.sets) : [];
   const p = s.wu ? prevA[ai] : prevW[wi];
-  const t = s.wu ? null : setTarget(prevW.length ? (prevW[wi] || prevW[prevW.length - 1]) : null);
+  const t = s.wu ? null : setTarget(prevW.length ? (prevW[wi] || prevW[prevW.length - 1]) : null, exId);
+  const U = isTime(exId) ? 'Sek.' : 'Wdh.';
   const cw = num(s.w), cr = num(s.r);
-  const cur = e1rm(effW(exId, cw), cr), pv = p ? e1rm(effW(exId, p.w), p.r) : null, curRaw = e1rm(cw, cr);
+  const cur = scoreOf(exId, cw, cr), pv = p ? scoreOf(exId, p.w, p.r) : null, curRaw = isTime(exId) ? null : e1rm(cw, cr);
   const up = !s.wu && cur != null && pv != null && cur > pv + 1e-9;
   const isPR = !s.wu && cur != null && best != null && cur > best + 1e-9;
   const hit = t && cr != null && ((cr >= t.r && (t.w == null || (cw != null && cw >= t.w - 1e-9))) || (t.w != null && curRaw != null && curRaw >= e1rm(t.w, t.r) - 1e-9));
-  const goal = t ? `<tr class="tgt"><td></td><td colspan="2"><div class="goal ${hit ? 'hit' : ''}" id="goal-${i}" data-tw="${t.w ?? ''}" data-tr="${t.r}" data-txt="${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} Wdh.">${hit ? '✓ Ziel erreicht: ' : '🎯 Ziel: '}${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} Wdh.</div></td><td></td></tr>`
+  const goal = t ? `<tr class="tgt"><td></td><td colspan="2"><div class="goal ${hit ? 'hit' : ''}" id="goal-${i}" data-tw="${t.w ?? ''}" data-tr="${t.r}" data-txt="${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} ${U}">${hit ? '✓ Ziel erreicht: ' : '🎯 Ziel: '}${t.w != null ? fmtNum(t.w) + ' kg × ' : ''}${t.r} ${U}</div></td><td></td></tr>`
     : s.wu ? `<tr class="tgt"><td></td><td colspan="2"><div class="goal wu">Aufwärmsatz · zählt nicht für Ziele und Rekorde</div></td><td></td></tr>` : '';
   return goal + `<tr class="${up ? 'up' : ''} ${s.wu ? 'wu' : ''}"><td class="n"><button class="setno ${s.wu ? 'is-wu' : ''}" data-act="toggle-wu" data-i="${i}" aria-label="${s.wu ? 'Aufwärmsatz – tippen für Arbeitssatz' : 'Satz ' + (wi + 1) + ' – tippen für Aufwärmsatz'}">${s.wu ? 'A' : wi + 1}</button></td>
     <td><input inputmode="decimal" data-in="w" data-i="${i}" value="${s.w != null ? String(s.w).replace('.', DEC) : ''}" placeholder="${t && t.w != null ? fmtNum(t.w) : (p && p.w != null ? fmtNum(p.w) : '0')}">${p ? `<div class="prev">zuletzt ${p.w != null ? fmtNum(p.w) : '–'}</div>` : ''}</td>
-    <td><input inputmode="numeric" data-in="r" data-i="${i}" value="${s.r ?? ''}" placeholder="${t ? t.r : (p && p.r != null ? p.r : '0')}">${p ? `<div class="prev">zuletzt ${p.r ?? '–'}${isPR ? '<span class="pr">Rekord</span>' : ''}</div>` : (isPR ? '<div class="prev"><span class="pr">Rekord</span></div>' : '')}</td>
+    <td><input inputmode="numeric" data-in="r" data-i="${i}" value="${s.r ?? ''}" placeholder="${t ? t.r : (p && p.r != null ? p.r : '0')}">${p ? `<div class="prev">zuletzt ${p.r ?? '–'}${isPR ? '<span class="pr">Rekord</span>' : ''}</div>` : (isPR ? '<div class="prev"><span class="pr">Rekord</span></div>' : '')}${isTime(exId) ? swBtn(exId, i) : ''}</td>
     <td style="width:40px"><button class="icon-btn" data-act="del-set" data-i="${i}" aria-label="Satz löschen" style="width:34px">${SV.x}</button></td></tr>`;
 }
 
@@ -1470,7 +1497,7 @@ function viewHistory() {
       <div class="grow"><div class="title">${esc(relDay(k))}${relDay(k).length > 10 ? '' : ', ' + fmtKey(k, { day: '2-digit', month: '2-digit' })}</div>
       <div class="small muted ellipsis">${(() => { const d = S.days[k]; return d.start && d.end && d.end > d.start ? '⏱ ' + fmtDur(d.end - d.start) + ' · ' : ''; })()}${entries.map(e => esc(dispName(e))).join(' · ')}</div></div><span class="muted">${open ? SV.up : SV.down}</span></div>`;
     if (open) {
-      h += `<div style="margin-top:8px">` + entries.map(e => `<div class="sess-ex">${icon(e.icon, 'ic')}<div class="grow"><div style="font-weight:600">${esc(dispName(e))}</div><div class="small t2">${esc(setsText(e.sets))}</div></div></div>`).join('') +
+      h += `<div style="margin-top:8px">` + entries.map(e => `<div class="sess-ex">${icon(e.icon, 'ic')}<div class="grow"><div style="font-weight:600">${esc(dispName(e))}</div><div class="small t2">${esc(setsText(e.sets, e.exId))}</div></div></div>`).join('') +
         `</div><div class="row" style="margin-top:10px"><button class="btn sm grow" data-act="edit-day" data-k="${k}">Bearbeiten</button><button class="btn sm danger" data-act="del-day" data-k="${k}">Tag löschen</button></div>`;
     }
     h += `</div>`;
@@ -1620,7 +1647,7 @@ function daySummaryHTML(k) {
   const dur = d.start && d.end && d.end > d.start ? ' · ⏱ ' + fmtDur(d.end - d.start) : '';
   const gl = dayGroups(k);
   return `${G ? `<div class="day-groups">${gl.map(x => `<span class="dg"><span class="cal-tag big" style="background:${GROUPS[x].col}">${GROUPS[x].ab}</span><b>${esc(x)}</b></span>`).join('')}<span class="muted small">${dur}</span></div>` : ''}` +
-    ents.map(e => `<div class="sess-ex">${icon(e.icon, 'ic')}<div class="grow"><div style="font-weight:600;color:var(--text)">${esc(dispName(e))}</div><div class="small t2">${esc(setsText(e.sets))}</div></div></div>`).join('');
+    ents.map(e => `<div class="sess-ex">${icon(e.icon, 'ic')}<div class="grow"><div style="font-weight:600;color:var(--text)">${esc(dispName(e))}</div><div class="small t2">${esc(setsText(e.sets, e.exId))}</div></div></div>`).join('');
 }
 
 /* ---- Progress ---- */
@@ -1645,6 +1672,7 @@ const BADGE_TIERS = {
   bronze: ['#8a4f22', '#d08a4c', '#f6c08d'], silver: ['#6b7480', '#b8c0ca', '#f3f6f9'], gold: ['#9a6a0c', '#e0b23a', '#fff1a8'],
   diamond: ['#1c6f9c', '#4cc3ef', '#d9f7ff'], elite: ['#4b1fa3', '#9d5cf0', '#f1d6ff']
 };
+const HOLD_STEPS = { plank: [[60, 'bronze'], [120, 'silver'], [180, 'gold'], [300, 'diamond']], sideplank: [[30, 'bronze'], [60, 'silver'], [90, 'gold'], [120, 'diamond']] };
 const BENCH_IDS = ['benchbb', 'bench'], SQUAT_IDS = ['squat'], DL_IDS = ['deadlift', 'sumodl'];
 const fmtKg = v => (Math.round(v * 10) / 10).toLocaleString(LANG === 'en' ? 'en' : 'de');
 function badgeSVG(b, big) {
@@ -1665,7 +1693,7 @@ function badgeSVG(b, big) {
 function computeBadges() {
   const en = LANG === 'en', bw = +PREF.bw || 0, out = [];
   const keys = Object.keys(S.days).filter(k => (S.days[k].entries || []).some(e => validSets(e.sets).length)).sort();
-  const firstW = {}, bestW = {}, lift = { b: 0, s: 0, d: 0 };
+  const firstW = {}, bestW = {}, firstT = {}, bestT = {}, lift = { b: 0, s: 0, d: 0 };
   let total = 0, cardio = 0, prDays = 0, prStreak = 0, firstPR = null, streakPR = null, maxDayVol = 0, dayVolAt = {};
   const won = {}; const hit = (id, k) => { if (!won[id]) won[id] = k; };
   const weekOf = k => { const d = new Date(k + 'T12:00:00'); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); return d.toISOString().slice(0, 10); };
@@ -1676,6 +1704,16 @@ function computeBadges() {
     (day.entries || []).forEach(e => {
       const sets = validSets(e.sets), x = exById(e.exId) || {}, isC = x.kind === 'cardio' || (typeof isCardio === 'function' && isCardio(e.exId));
       if (isC) { cardio += sets.reduce((a, s) => a + (s.m || 0), 0); return; }
+      if (isTime(e.exId)) {
+        const hs = sets.filter(s => !s.wu && (s.r || 0) >= 1); if (!hs.length) return;
+        const top = Math.max(...hs.map(s => s.r)), id = e.exId;
+        if (firstT[id] == null) firstT[id] = top; else if (top > (bestT[id] || 0)) pr = true;
+        bestT[id] = Math.max(bestT[id] || 0, top);
+        const g = bestT[id] / firstT[id];
+        [[1.1, 'b'], [1.25, 's'], [1.5, 'g'], [2, 'd']].forEach(([f, t]) => { if (g >= f - 1e-9) hit('ex:' + id + ':' + t, k); });
+        (HOLD_STEPS[id] || []).forEach(([sec]) => { if (bestT[id] >= sec) hit('hold:' + id + ':' + sec, k); });
+        return;
+      }
       const work = sets.filter(s => !s.wu && effW(e.exId, s.w) > 0 && (s.r || 0) >= 1);
       work.forEach(s => vol += effW(e.exId, s.w) * s.r);
       if (!work.length) return;
@@ -1741,6 +1779,16 @@ function computeBadges() {
   add('work', 'tot1000', 'diamond', T('1.000 Tonnen', '1,000 tonnes'), T('Insgesamt eine Million Kilo bewegt.', 'One million kilos moved in total.'), total / 1e6, { big: '1000', unit: T('TONNEN', 'TONNES'), left: T(`${fmtKg(total / 1000)} von 1.000 t`, `${fmtKg(total / 1000)} of 1,000 t`) });
   add('work', 'c10', 'silver', T('10 Stunden Cardio', '10 hours cardio'), T('Insgesamt 10 Stunden Cardio.', '10 hours of cardio in total.'), cardio / 600, { big: 10, unit: T('STD CARDIO', 'H CARDIO'), left: T(`${fmtKg(cardio / 60)} von 10 Std.`, `${fmtKg(cardio / 60)} of 10 h`) });
   add('work', 'c50', 'gold', T('50 Stunden Cardio', '50 hours cardio'), T('Insgesamt 50 Stunden Cardio.', '50 hours of cardio in total.'), cardio / 3000, { big: 50, unit: T('STD CARDIO', 'H CARDIO'), left: T(`${fmtKg(cardio / 60)} von 50 Std.`, `${fmtKg(cardio / 60)} of 50 h`) });
+  // Halten (Plank, Seitstütz)
+  Object.entries(HOLD_STEPS).forEach(([id, steps]) => { const x = exById(id); if (!x) return; const cur = bestT[id] || 0, nm = id === 'plank' ? 'Plank' : T('Seitstütz', 'Side plank');
+    steps.forEach(([sec, tier]) => add('hold', 'hold:' + id + ':' + sec, tier, `${nm} ${sec >= 60 && sec % 60 === 0 ? sec / 60 + ' min' : sec + ' s'}`, T(`${nm} ${sec} Sekunden am Stück gehalten.`, `${nm} held for ${sec} seconds.`), cur / sec,
+      { big: sec >= 60 && sec % 60 === 0 ? sec / 60 : sec, unit: sec >= 60 && sec % 60 === 0 ? 'MIN' : 'SEK', sub: nm, left: T(`noch ${Math.max(0, sec - cur)} s`, `${Math.max(0, sec - cur)} s to go`) })); });
+  Object.keys(firstT).forEach(id => {
+    const x = exById(id); if (!x) return; const g = bestT[id] / firstT[id];
+    [[1.1, 'b', 'bronze', '+10 %'], [1.25, 's', 'silver', '+25 %'], [1.5, 'g', 'gold', '+50 %'], [2, 'd', 'diamond', '×2']].forEach(([f, t, tier, lbl]) =>
+      add('ex', 'ex:' + id + ':' + t, tier, `${x.name} ${lbl}`, T(`${x.name}: ${lbl === '×2' ? 'Zeit verdoppelt' : lbl + ' längere Zeit'} als beim ersten Mal (${firstT[id]} s).`, `${x.name}: ${lbl === '×2' ? 'doubled your time' : lbl + ' longer'} vs. your first time (${firstT[id]} s).`),
+        (g - 1) / (f - 1), { big: lbl.replace(' ', ''), unit: '', exId: id, step: f, left: T(`noch ${Math.ceil(firstT[id] * f - bestT[id])} s`, `${Math.ceil(firstT[id] * f - bestT[id])} s to go`) }));
+  });
   // Steigerung pro Übung
   Object.keys(firstW).forEach(id => {
     const x = exById(id); if (!x) return;
@@ -1752,8 +1800,8 @@ function computeBadges() {
   return out;
 }
 const BADGE_CATS = () => LANG === 'en'
-  ? [['start', 'Getting started'], ['count', 'Workouts'], ['club', 'Strength clubs'], ['bw', 'Body weight'], ['work', 'Hard work'], ['ex', 'Progress per exercise']]
-  : [['start', 'Start'], ['count', 'Anzahl Trainings'], ['club', 'Kraft-Clubs'], ['bw', 'Nach Körpergewicht'], ['work', 'Fleiß'], ['ex', 'Steigerung pro Übung']];
+  ? [['start', 'Getting started'], ['count', 'Workouts'], ['club', 'Strength clubs'], ['bw', 'Body weight'], ['work', 'Hard work'], ['hold', 'Holds'], ['ex', 'Progress per exercise']]
+  : [['start', 'Start'], ['count', 'Anzahl Trainings'], ['club', 'Kraft-Clubs'], ['bw', 'Nach Körpergewicht'], ['work', 'Fleiß'], ['hold', 'Halten'], ['ex', 'Steigerung pro Übung']];
 const badgeTile = b => `<button class="bdg ${b.at ? 'won' : 'lock'}" data-act="badge" data-id="${esc(b.id)}">${b.exId ? `<span class="bdg-ex">${icon((exById(b.exId) || {}).icon)}</span>` : ''}${badgeSVG(b)}
   <span class="bdg-n">${esc(b.exId ? b.big : b.name)}</span>${b.at ? '' : `<span class="bdg-bar"><i style="width:${Math.round(b.prog * 100)}%"></i></span>`}</button>`;
 function badgesSection() {
@@ -1826,8 +1874,8 @@ function viewProgress0() {
   if (!S.prog.ex || !used.has(S.prog.ex)) S.prog.ex = list[0].id;
   const x = used.get(S.prog.ex);
   const cardio = x.kind === 'cardio' || isCardio(x.id);
-  const MET = cardio ? { min: ['Minuten', 'min'] } : METRICS;
-  const metric = cardio ? 'min' : S.prog.metric;
+  const MET = cardio ? { min: ['Minuten', 'min'] } : isTime(x.id) ? { reps: [LANG === 'en' ? 'Longest hold' : 'Längste Zeit', 's'] } : METRICS;
+  const metric = cardio ? 'min' : isTime(x.id) ? 'reps' : S.prog.metric;
   let h = `<div class="chips">${list.map(e => `<button class="chip ${e.id === S.prog.ex ? 'on' : ''}" data-act="prog-ex" data-id="${e.id}">${icon(e.icon)}<span>${esc(e.name)}</span></button>`).join('')}</div>
     <div class="seg" style="margin-top:6px">${Object.entries(MET).map(([k, [l]]) => `<button data-act="metric" data-m="${k}" class="${metric === k ? 'on' : ''}">${l.replace(' (geschätzt)', '')}</button>`).join('')}</div>`;
   const pts = seriesFor(S.prog.ex, metric);
@@ -1840,7 +1888,7 @@ function viewProgress0() {
     <div class="chart-wrap chart" id="chart">${chartSVG(pts, unit)}<div class="tip" id="tip"></div></div>
     <div class="small muted" style="margin-top:6px">Bestwert ${fmtNum(best)} ${unit} · ${pts.length} Trainingstage${metric === 'orm' ? ' · 1RM = geschätztes Maximum für 1 Wiederholung' : ''}</div></div>
     <h2>Einträge</h2><div class="card" style="padding-top:8px"><table class="data"><thead><tr><th>Datum</th><th>${cardio ? 'Dauer' : 'Sätze'}</th><th class="r">${esc(mLabel.replace(' (geschätzt)', ''))}</th></tr></thead><tbody>
-    ${[...pts].reverse().slice(0, 20).map(p => `<tr><td>${fmtKey(p.k, { day: '2-digit', month: '2-digit', year: '2-digit' })}</td><td class="t2 small">${esc(setsText(p.sets))}</td><td class="r"><b>${fmtNum(p.v)}</b></td></tr>`).join('')}
+    ${[...pts].reverse().slice(0, 20).map(p => `<tr><td>${fmtKey(p.k, { day: '2-digit', month: '2-digit', year: '2-digit' })}</td><td class="t2 small">${esc(setsText(p.sets, S.prog.ex))}</td><td class="r"><b>${fmtNum(p.v)}</b></td></tr>`).join('')}
     </tbody></table></div>`;
   return h;
 }
@@ -2906,7 +2954,7 @@ document.addEventListener('click', async ev => {
     case 'r-del': { const r = routineById(S.redit); r.exIds.splice(+el.dataset.i, 1); saveRoutinesSoon(); render(); break; }
     case 'r-remove': { const r = routineById(S.redit); if (!await modal({ title: 'Routine löschen?', body: esc(r.name || 'Ohne Namen') + ' – deine bisherigen Trainings bleiben erhalten.', ok: 'Löschen', danger: true })) return;
       S.routines = S.routines.filter(x => x.id !== r.id); Object.values(S.days).forEach(d => { if (d.routine === r.id && d.date === todayKey()) d.routine = null; }); S.redit = null; Store.saveSettings(); render(); break; }
-    case 'open-ex': S.ex = el.dataset.id; render(); window.scrollTo(0, 0);
+    case 'open-ex': if (!S.ex) S.listY = window.scrollY; S.ex = el.dataset.id; render(); window.scrollTo(0, 0);
       { const e = getEntry(S.day, S.ex); if (!e || !e.sets.length) { addSet(); } } break;
     case 'finish-day': {
       const k = S.day, d = S.days[k]; if (!d) return;
@@ -2922,9 +2970,13 @@ document.addEventListener('click', async ev => {
     case 'run-start': unlockAudioSafe(); startRun(S.day, S.ex); render(); break;
     case 'run-stop': stopRun(S.day); render(); break;
     case 'quick-min': { const e = getEntry(S.day, S.ex, true); if (!e.sets.length) e.sets.push({ m: null }); e.sets[0].m = +el.dataset.m; touchDay(S.day); Store.saveDay(S.day); render(); break; }
-    case 'close-ex': S.ex = null; render(); window.scrollTo(0, 0); break;
-    case 'add-set': addSet(true); break;
-    case 'del-set': { const e = getEntry(S.day, S.ex); if (!e) return; e.sets.splice(+el.dataset.i, 1); Store.saveDay(S.day); render(); break; }
+    case 'close-ex': S.ex = null; render(); window.scrollTo(0, S.listY || 0); requestAnimationFrame(() => window.scrollTo(0, S.listY || 0)); break;
+    case 'add-set': addSet(!isTime(S.ex)); break;
+    case 'sw': { const i = +el.dataset.i; if (swOn(S.ex, i)) { swStop(true); render(); break; }
+      if (S.sw) swStop(true);
+      const e = getEntry(S.day, S.ex, true); if (!e.sets[i]) return;
+      S.sw = { day: S.day, ex: S.ex, i, t0: Date.now() }; lsSet('tt_sw', S.sw); touchDay(S.day); Store.saveDay(S.day); render(); break; }
+    case 'del-set': { const e = getEntry(S.day, S.ex); if (!e) return; if (S.sw && S.sw.ex === S.ex && S.sw.day === S.day) { if (S.sw.i === +el.dataset.i) swStop(false); else if (S.sw.i > +el.dataset.i) { S.sw.i--; lsSet('tt_sw', S.sw); } } e.sets.splice(+el.dataset.i, 1); Store.saveDay(S.day); render(); break; }
     case 'new-ex': { const r = await exerciseDialog(S.q ? { name: S.q.trim(), icon: 'generic', _new: true } : undefined); if (!r) return; const x = { id: 'c_' + uid(), name: r.name, icon: r.icon, cat: 'Eigene' }; if (r.img) { x.img = r.img; x.icon = 'img:' + x.id; } S.custom.push(x); Store.saveSettings(); render(); toast('Übung hinzugefügt'); break; }
     case 'ex-menu': {
       const x = exById(S.ex), custom = x.cat === 'Eigene' || S.custom.includes(x);
