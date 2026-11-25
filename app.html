@@ -3218,9 +3218,9 @@ function hintsHTML() {
     const tab = (k, t) => `<button class="os-tab ${os === k ? 'on' : ''}" data-os="${k}">${t}</button>`;
     const how = os === 'and'
       ? (en ? 'In Chrome: menu <b>⋮</b> → “Add to Home screen” or “Install app”.' : 'In Chrome: Menü <b>⋮</b> → „Zum Startbildschirm hinzufügen“ oder „App installieren“.')
-      : (en ? 'In Safari: <b>Share</b> → “Add to Home Screen”.' : 'In Safari: <b>Teilen</b> → „Zum Home-Bildschirm“.');
+      : (en ? 'In Safari: <b>•••</b> → <b>Share</b> → “Add to Home Screen”.' : 'In Safari: <b>•••</b> → <b>Teilen</b> → „Zum Home-Bildschirm“.');
     out += box('inst', (en ? '<b>Add the app to your home screen.</b> ' : '<b>Leg die App auf deinen Startbildschirm.</b> ') + `<div class="os-tabs">${tab('ios', 'iPhone')}${tab('and', 'Android')}</div>` + how +
-      (en ? ' Otherwise your browser may delete your entries after a few days without use.' : ' Sonst kann der Browser deine Einträge nach einigen Tagen ohne Nutzung löschen.')); }
+      (en ? ' Otherwise your browser may delete your entries after a few days without use.' : ' Sonst kann der Browser deine Einträge nach einigen Tagen ohne Nutzung löschen.'), `<button class="btn sm primary" data-install>${en ? 'Install app' : 'App installieren'}</button>`); }
   const days = sortedDayKeys().length, lb = lsGet('tt_lastBackup');
   if (days >= 3 && now - (lb || 0) > 14 * 864e5 && now - (H.bak || 0) > 14 * 864e5)
     out += box('bak', en ? `<b>Time for a backup.</b> ${lb ? 'Your last backup is more than 14 days old.' : 'You have not saved a backup yet.'}` : `<b>Zeit für ein Backup.</b> ${lb ? 'Dein letztes Backup ist älter als 14 Tage.' : 'Du hast noch kein Backup gesichert.'}`,
@@ -3386,6 +3386,73 @@ Store.loadCache(); showSplash();
 Store.init();
 Lic.gate(); Lic.recheck();
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
+</script>
+<script>
+/* „App installieren“: Chrome, Edge und Android öffnen ihr eigenes Installationsfenster. Auf dem iPhone erlaubt Apple
+   keinen solchen Knopf – dort zeigt eine kurze Anleitung den Weg über das Safari-Menü. In den Browsern von TikTok,
+   Instagram & Co. lässt sich nichts installieren; dort erklärt sie zuerst, wie man die Seite im Browser öffnet. */
+(function () {
+  var deferred = null, sheet = null, ua = navigator.userAgent;
+  var en = function () { try { return LANG === 'en'; } catch (e) { return document.documentElement.lang === 'en'; } };
+  var T = function (de, e) { return en() ? e : de; };
+  var installed = function () { return navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); };
+  var inApp = /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|BytedanceWebview|Snapchat|Pinterest|LinkedInApp|GSA\//i.test(ua);
+  var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var iosOther = ios && /CriOS|FxiOS|EdgiOS/.test(ua), android = /Android/i.test(ua);
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; if (sheet) show(); });
+  window.addEventListener('appinstalled', function () { deferred = null; close(); });
+  function close() { if (sheet) { sheet.remove(); sheet = null; } }
+  function run() {
+    var p = deferred; deferred = null; if (!p) return show();
+    p.prompt(); (p.userChoice || Promise.resolve()).then(function (c) { if (c && c.outcome === 'accepted') close(); else show(); });
+  }
+  function steps() {
+    if (inApp) return [T('Tippe oben rechts auf <b>•••</b> (oder unten auf das Kompass-Symbol).', 'Tap <b>•••</b> at the top right (or the compass icon at the bottom).'),
+      T('Wähle <b>Im Browser öffnen</b> bzw. <b>In Safari öffnen</b>.', 'Choose <b>Open in browser</b> or <b>Open in Safari</b>.'),
+      T('Tippe dort noch einmal auf <b>App installieren</b>.', 'Tap <b>Install app</b> there again.')];
+    if (iosOther) return [T('Tippe oben rechts auf das Teilen-Symbol <b>⬆︎</b>.', 'Tap the share icon <b>⬆︎</b> at the top right.'),
+      T('Wähle <b>Zum Home-Bildschirm</b>.', 'Choose <b>Add to Home Screen</b>.'), T('Tippe auf <b>Hinzufügen</b>.', 'Tap <b>Add</b>.')];
+    if (ios) return [T('Tippe unten in Safari auf <b>•••</b> bzw. <b>☰</b> oder auf das Teilen-Symbol <b>⬆︎</b>.', 'In Safari, tap <b>•••</b> or <b>☰</b> at the bottom, or the share icon <b>⬆︎</b>.'),
+      T('Wähle <b>Teilen</b> und, falls nötig, <b>Mehr anzeigen</b>.', 'Choose <b>Share</b> and, if needed, <b>View More</b>.'),
+      T('Tippe auf <b>Zum Home-Bildschirm</b> und dann auf <b>Hinzufügen</b>.', 'Tap <b>Add to Home Screen</b>, then <b>Add</b>.')];
+    if (android) return [T('Tippe oben rechts auf <b>⋮</b>.', 'Tap <b>⋮</b> at the top right.'),
+      T('Wähle <b>App installieren</b> oder <b>Zum Startbildschirm hinzufügen</b>.', 'Choose <b>Install app</b> or <b>Add to Home screen</b>.'), T('Bestätige mit <b>Installieren</b>.', 'Confirm with <b>Install</b>.')];
+    return [T('Klicke rechts in der Adressleiste auf das Installieren-Symbol – oder im Browser-Menü auf <b>App installieren</b>.', 'Click the install icon at the right of the address bar – or <b>Install app</b> in the browser menu.'),
+      T('In Safari auf dem Mac: <b>Ablage → Zum Dock hinzufügen</b>.', 'In Safari on a Mac: <b>File → Add to Dock</b>.')];
+  }
+  function show() {
+    if (installed()) return;
+    close();
+    sheet = document.createElement('div');
+    sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true');
+    var arrow = ios && !iosOther && !inApp && !(deferred && !inApp);
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(' + (arrow ? 46 : 16) + 'px + env(safe-area-inset-bottom))';
+    var list = steps().map(function (s, i) { return '<li style="display:flex;gap:12px;align-items:flex-start;margin:0 0 12px"><span style="flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent,#3987e5);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px">' + (i + 1) + '</span><span style="padding-top:3px">' + s + '</span></li>'; }).join('');
+    var button = deferred && !inApp ? '<button type="button" data-install-now class="btn primary" style="width:100%;margin:4px 0 10px">' + T('Jetzt installieren', 'Install now') + '</button>' : '';
+    sheet.innerHTML = '<div style="width:100%;max-width:440px;background:var(--surface,#fff);color:var(--text,#111);border:1px solid var(--line,#ddd);border-radius:20px;padding:20px 20px 14px;box-shadow:0 20px 60px rgba(0,0,0,.35);font-size:15px;line-height:1.45">'
+      + '<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px"><img src="icon-512.png" alt="" width="44" height="44" style="border-radius:11px"><div><b style="font-size:17px">' + T('App auf den Startbildschirm', 'Add the app to your home screen') + '</b><div style="color:var(--muted,#777);font-size:13px">' + T('Öffnet sich danach wie jede andere App – auch offline.', 'Then it opens like any other app – even offline.') + '</div></div></div>'
+      + (button || '<ol style="list-style:none;margin:0;padding:0">' + list + '</ol>')
+      + '<button type="button" data-install-close class="btn" style="width:100%;margin-top:4px">' + T('Schließen', 'Close') + '</button></div>'
+      + (arrow ? '<div aria-hidden="true" style="position:fixed;left:50%;bottom:calc(6px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:30px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);animation:ttbounce 1.2s ease-in-out infinite">↓</div><style>@keyframes ttbounce{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}</style>' : '');
+    sheet.addEventListener('click', function (e) {
+      if (e.target === sheet || e.target.closest('[data-install-close]')) close();
+      else if (e.target.closest('[data-install-now]')) run();
+    });
+    document.body.appendChild(sheet);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-install]');
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (deferred && !inApp) run(); else show();
+  }, true);
+  // Von der Startseite mit ?install geöffnet: gleich die Anleitung zeigen (ein Installationsfenster braucht einen Tipp).
+  if (/[?&]install\b/.test(location.search)) {
+    var rest = location.search.replace(/([?&])install\b&?/, '$1').replace(/[?&]$/, '');
+    try { history.replaceState(null, '', location.pathname + rest + location.hash); } catch (e) {}
+    if (!installed()) setTimeout(show, 700);
+  }
+})();
 </script>
 </body>
 </html>
