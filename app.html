@@ -230,6 +230,7 @@
 
   /* icons */
   svg.ex{display:block;overflow:visible}
+  .goal-pick{display:grid;gap:8px}.goal-opt{display:flex;align-items:center;border-radius:14px;border:1.5px solid var(--line);background:var(--surface-2)}.goal-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2))}.goal-opt>button[data-act=goal]{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border:0;background:none;color:var(--text);font:inherit;text-align:left}.goal-opt>button span{font-size:13px;color:var(--text-2)}.gi-btn{flex:none;width:34px;height:34px;margin-right:12px;border-radius:50%;border:1.5px solid var(--accent);background:none;color:var(--accent);font:700 16px/1 Georgia,serif;font-style:italic}.gi{display:grid;gap:8px}.gi-row{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--surface-2)}.gi-row span{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2)}
   .sw-btn{display:block;width:100%;margin-top:5px;padding:7px 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--accent);font:inherit;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
   .sw-btn.on{background:#e5484d;border-color:#e5484d;color:#fff}
   .bw-note{margin:0 4px 10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;line-height:1.4;color:var(--text-2)}
@@ -1227,6 +1228,12 @@ function viewSettings() {
     <label class="lab" style="margin-top:14px">${LANG === 'en' ? 'Body weight (kg)' : 'Körpergewicht (kg)'}</label>
     <input class="f" data-pref="bw" inputmode="decimal" value="${PREF.bw ? String(PREF.bw).replace('.', LANG === 'en' ? '.' : ',') : ''}" placeholder="${LANG === 'en' ? 'e.g. 80' : 'z. B. 80'}">
     <div class="small muted" style="margin-top:6px">${LANG === 'en' ? 'Optional – used only for the body-weight badges. Stays on your phone.' : 'Freiwillig – nur für die Abzeichen nach Körpergewicht. Bleibt auf deinem Handy.'}</div>
+    <h2>${LANG === 'en' ? 'Training goal' : 'Trainingsziel'}</h2>
+    <div class="small muted" style="margin:-4px 0 8px">${LANG === 'en' ? 'Decides how today\'s targets are calculated: more reps first, then more weight.' : 'Bestimmt, wie die Ziele für heute berechnet werden: erst mehr Wiederholungen, dann mehr Gewicht.'}</div>
+    <div class="goal-pick">${Object.entries(GOALS).map(([k, g]) => { const [n, d] = LANG === 'en' ? g.en : g.de; return `<div class="goal-opt ${(PREF.goal || 'hyp') === k ? 'on' : ''}"><button data-act="goal" data-v="${k}"><b>${n}</b><span>${d}</span></button><button class="gi-btn" data-act="goal-info" data-v="${k}" aria-label="${LANG === 'en' ? 'Explanation' : 'Erklärung'}">i</button></div>`; }).join('')}</div>
+    <div class="small t2" style="margin-top:8px">${(() => { const G = goalOf(); return LANG === 'en' ? `Example: 60 kg × ${G.hi - 1} → target 60 kg × ${G.hi}. Reached ${G.hi} reps → 62.5 kg × ${G.lo}.` : `Beispiel: 60 kg × ${G.hi - 1} → Ziel 60 kg × ${G.hi}. ${G.hi} Wdh. geschafft → 62,5 kg × ${G.lo}.`; })()}</div>
+    <label class="lab" style="margin-top:12px">${LANG === 'en' ? 'Holds (plank): target increase' : 'Halte-Übungen (Plank): Steigerung pro Training'}</label>
+    <div class="seg">${[3, 5, 10].map(v => `<button data-act="holdstep" data-v="${v}" class="${(+PREF.holdStep || 5) === v ? 'on' : ''}">+${v} s</button>`).join('')}</div>
     <h2>Farbe</h2>
     <div class="swatches">${ACCENTS.map(([c, l]) => `<button class="swatch ${PREF.accent === c ? 'on' : ''}" data-act="accent" data-c="${c}" style="background:${c}" aria-label="${l}">${PREF.accent === c ? '✓' : ''}</button>`).join('')}</div>
     <div class="small muted" style="margin-top:6px">Ändert Knöpfe, Bilder, Ziele und Diagramme.</div>
@@ -1434,13 +1441,42 @@ function viewCardio(x, k, sets, prev) {
 }
 // Zielvorgabe pro Satz aus dem letzten Training (doppelte Progression):
 // bis 11 Wdh. -> gleiches Gewicht, +1 Wdh.; ab 12 Wdh. -> mehr Gewicht, etwas weniger Wdh.
+// Trainingsziele: Wiederholungsbereich für die doppelte Progression
+const GOALS = {
+  str: { lo: 3, hi: 6, de: ['Maximalkraft', '3–6 Wdh. · schwer, lange Pausen'], en: ['Max strength', '3–6 reps · heavy, long rests'] },
+  hyp: { lo: 8, hi: 12, de: ['Muskelaufbau', '8–12 Wdh. · Standard, mittlere Pausen'], en: ['Muscle growth', '8–12 reps · default'] },
+  end: { lo: 15, hi: 20, de: ['Kraftausdauer', '15–20 Wdh. · leichter, kurze Pausen'], en: ['Muscular endurance', '15–20 reps · lighter, short rests'] }
+};
+const GOAL_INFO = {
+  str: {
+    de: [['Gewicht', 'ca. 80–90 % deines Maximalgewichts (1RM)'], ['Sätze', '3–5 Sätze, 3–6 Wiederholungen'], ['Pause', '2–5 Minuten']],
+    en: [['Load', 'about 80–90 % of your one-rep max (1RM)'], ['Sets', '3–5 sets of 3–6 reps'], ['Rest', '2–5 minutes']],
+    whyDe: 'Schwere Lasten trainieren vor allem das Nervensystem: Es lernt, mehr Muskelfasern gleichzeitig und schneller anzusteuern. Dadurch wirst du stärker, ohne dass der Muskel stark wachsen muss. Lange Pausen füllen die schnellen Energiespeicher (Kreatinphosphat) wieder auf, damit jeder Satz mit voller Kraft gelingt.',
+    whyEn: 'Heavy loads mainly train your nervous system: it learns to activate more muscle fibres at once and faster. That makes you stronger without much muscle growth. Long rests refill the fast energy stores (creatine phosphate) so every set is done at full power.' },
+  hyp: {
+    de: [['Gewicht', 'ca. 65–80 % deines Maximalgewichts'], ['Sätze', '3–4 Sätze, 8–12 Wiederholungen, bis kurz vor dem Muskelversagen'], ['Pause', '1–3 Minuten']],
+    en: [['Load', 'about 65–80 % of your one-rep max'], ['Sets', '3–4 sets of 8–12 reps, close to failure'], ['Rest', '1–3 minutes']],
+    whyDe: 'Muskeln wachsen vor allem durch hohe mechanische Spannung über genug Trainingsvolumen. Studien zeigen: Entscheidend ist, dass du nah ans Muskelversagen gehst. 8–12 Wiederholungen sind dafür der praktischste Bereich, schwer genug für viel Spannung und zeitsparend genug für ausreichend Sätze.',
+    whyEn: 'Muscles grow mainly from high mechanical tension across enough training volume. Studies show what matters most is getting close to failure. 8–12 reps is the most practical range: heavy enough for high tension, efficient enough for plenty of sets.' },
+  end: {
+    de: [['Gewicht', 'unter ca. 65 % deines Maximalgewichts'], ['Sätze', '2–3 Sätze, 15–20 Wiederholungen'], ['Pause', '30–90 Sekunden']],
+    en: [['Load', 'below about 65 % of your one-rep max'], ['Sets', '2–3 sets of 15–20 reps'], ['Rest', '30–90 seconds']],
+    whyDe: 'Viele Wiederholungen mit kurzen Pausen verbessern die Ausdauer des Muskels: Er bildet mehr feine Blutgefäße (Kapillaren) und Mitochondrien – die „Kraftwerke“ der Zellen – und lernt, Ermüdung (Übersäuerung) besser abzupuffern. So hältst du länger durch.',
+    whyEn: 'Many reps with short rests improve your muscle\'s endurance: it builds more small blood vessels (capillaries) and mitochondria – the cells\' power plants – and gets better at buffering fatigue. You can keep going longer.' }
+};
+function goalInfo(k) {
+  const g = GOALS[k], I = GOAL_INFO[k], en = LANG === 'en';
+  const rows = (en ? I.en : I.de).map(([a, b]) => `<div class="gi-row"><span>${a}</span><b>${b}</b></div>`).join('');
+  modal({ title: (en ? g.en : g.de)[0], body: `<div class="gi">${rows}</div><div class="lab" style="margin-top:14px">${en ? 'Why it works' : 'Warum das funktioniert'}</div><div class="small t2" style="line-height:1.5">${en ? I.whyEn : I.whyDe}</div>`, ok: 'OK' });
+}
+const goalOf = () => GOALS[PREF.goal] || GOALS.hyp;
 function setTarget(p, exId) {
   if (!p || p.r == null) return null;
-  if (isTime(exId)) return { w: p.w > 0 ? p.w : null, r: p.r + 5 };
-  const r = p.r, w = p.w;
+  if (isTime(exId)) return { w: p.w > 0 ? p.w : null, r: p.r + (+PREF.holdStep || 5) };
+  const r = p.r, w = p.w, G = goalOf();
   if (w == null || w <= 0) return { w: null, r: r + 1 };
   const step = w >= 20 ? 2.5 : 1;
-  if (r >= 12) return { w: Math.round((w + step) * 10) / 10, r: Math.max(r - 4, 6) };
+  if (r >= G.hi) return { w: Math.round((w + step) * 10) / 10, r: G.lo };
   return { w, r: r + 1 };
 }
 const prevSetFor = (prev, i) => prev && prev.sets.length ? (prev.sets[i] || prev.sets[prev.sets.length - 1]) : null;
@@ -2915,6 +2951,9 @@ document.addEventListener('click', async ev => {
     case 'accent': PREF.accent = el.dataset.c; savePrefs(); render(); break;
     case 'lang': PREF.lang = el.dataset.v; savePrefs(); location.reload(); break;
     case 'theme': PREF.theme = el.dataset.v; savePrefs(); render(); break;
+    case 'goal': PREF.goal = el.dataset.v; savePrefs(); render(); toast(LANG === 'en' ? 'Targets updated' : 'Ziele angepasst'); break;
+    case 'goal-info': goalInfo(el.dataset.v); break;
+    case 'holdstep': PREF.holdStep = +el.dataset.v; savePrefs(); render(); break;
     case 'cal-open': { const d = keyDate(S.day); S.cal = { y: d.getFullYear(), m: d.getMonth() }; render(); window.scrollTo(0, 0); break; }
     case 'cal-close': S.cal = null; render(); break;
     case 'cal-month': { let { y, m } = S.cal; m += +el.dataset.d; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } S.cal = { y, m }; render(); break; }
@@ -3026,7 +3065,7 @@ document.addEventListener('click', async ev => {
     }
   }
 });
-function backupText() { return JSON.stringify({ app: 'trainingstagebuch', v: 1, prefs: { name: PREF.name, accent: PREF.accent, theme: PREF.theme, lang: PREF.lang, bw: PREF.bw }, custom: S.custom, hidden: S.hidden, routines: S.routines, plan: S.plan, days: S.days }); }
+function backupText() { return JSON.stringify({ app: 'trainingstagebuch', v: 1, prefs: { name: PREF.name, accent: PREF.accent, theme: PREF.theme, lang: PREF.lang, bw: PREF.bw, goal: PREF.goal, holdStep: PREF.holdStep }, custom: S.custom, hidden: S.hidden, routines: S.routines, plan: S.plan, days: S.days }); }
 function lastBackupText() { const t = lsGet('tt_lastBackup'); if (!t) return 'Noch kein Backup gesichert.'; const d = Math.floor((Date.now() - t) / 864e5); return 'Letztes Backup: ' + (d === 0 ? 'heute' : d === 1 ? 'gestern' : 'vor ' + d + ' Tagen'); }
 function importBackup(v) {
   try {
@@ -3043,6 +3082,7 @@ function importBackup(v) {
     if (typeof pf.name === 'string' && pf.name.trim() && !(PREF.name || '').trim()) PREF.name = pf.name.slice(0, 30);
     if (['auto', 'de', 'en'].includes(pf.lang)) PREF.lang = pf.lang;
     if (+pf.bw >= 30 && +pf.bw <= 300) PREF.bw = +pf.bw;
+    if (GOALS[pf.goal]) PREF.goal = pf.goal; if ([3, 5, 10].includes(+pf.holdStep)) PREF.holdStep = +pf.holdStep;
     try { localStorage.removeItem('tt_badges'); } catch (e) {}
     savePrefs();
     Store.saveSettings(); render(); toast(`${n} Trainingstage importiert`);
