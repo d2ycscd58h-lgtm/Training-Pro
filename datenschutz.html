@@ -2,6 +2,45 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<script>
+/* Umzug auf meintrainingstagebuch.com: Auf der alten GitHub-Adresse werden Lizenz und alle Einträge (tt_*) im
+   Teil nach dem # mitgegeben (wird an keinen Server gesendet) und die App öffnet sich auf der neuen Adresse.
+   Dort werden sie übernommen, bevor die App startet. Daten auf der alten Adresse bleiben unverändert erhalten. */
+(function () {
+  var HOME = 'https://meintrainingstagebuch.com', TAG = '#tt-move=';
+  function enc(s) { var b = new TextEncoder().encode(s), out = ''; for (var i = 0; i < b.length; i += 32768) out += String.fromCharCode.apply(null, b.subarray(i, i + 32768)); return btoa(out).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function dec(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); var bin = atob(s), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return new TextDecoder().decode(b); }
+  try {
+    // ?alt bleibt auf der alten Adresse, z. B. um dort noch ein Backup zu machen.
+    if (/\.github\.io$/i.test(location.hostname) && !/[?&]alt\b/.test(location.search)) {
+      document.documentElement.style.visibility = 'hidden';
+      var data = {};
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^tt_/.test(k)) data[k] = localStorage.getItem(k); }
+      var page = location.pathname.replace(/^.*\//, '');
+      location.replace(HOME + '/' + page + location.search + (Object.keys(data).length ? TAG + enc(JSON.stringify(data)) : ''));
+      return;
+    }
+    if (location.hash.indexOf(TAG) !== 0) return;
+    var moved = JSON.parse(dec(location.hash.slice(TAG.length)));
+    var parse = function (v) { try { return JSON.parse(v); } catch (e) { return null; } };
+    for (var key in moved) {
+      if (!/^tt_/.test(key) || typeof moved[key] !== 'string') continue;
+      var here = localStorage.getItem(key);
+      if (key === 'tt_lic') {
+        // Eine freigeschaltete Lizenz wird übernommen; die Testphase zählt ab dem früheren Start.
+        var a = parse(moved[key]) || {}, b = parse(here) || {};
+        if (a.key && a.ok && !(b.key && b.ok)) localStorage.setItem(key, moved[key]);
+        else if (!(b.key && b.ok) && a.trialStart && (!b.trialStart || a.trialStart < b.trialStart)) { b.trialStart = a.trialStart; localStorage.setItem(key, JSON.stringify(b)); }
+      } else if (key === 'tt_cache') {
+        // Die Einträge: übernehmen, wenn hier noch keine Trainingstage gespeichert sind.
+        var hereDays = (parse(here) || {}).days;
+        if (!hereDays || !Object.keys(hereDays).length) localStorage.setItem(key, moved[key]);
+      } else if (here === null) localStorage.setItem(key, moved[key]);
+    }
+    history.replaceState(null, '', location.pathname + location.search);
+  } catch (e) { try { history.replaceState(null, '', location.pathname + location.search); } catch (x) {} }
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Datenschutz – Trainingstagebuch</title>
 <meta name="robots" content="noindex">
