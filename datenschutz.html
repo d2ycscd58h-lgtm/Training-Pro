@@ -12,7 +12,10 @@
   function dec(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); var bin = atob(s), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return new TextDecoder().decode(b); }
   try {
     // ?alt bleibt auf der alten Adresse, z. B. um dort noch ein Backup zu machen.
-    if (/\.github\.io$/i.test(location.hostname) && !/[?&]alt\b/.test(location.search)) {
+    // Eine vom Home-Bildschirm gestartete App bleibt auf der alten Adresse im Vollbild: iOS und Android zeigen
+    // eine andere Adresse sonst nur in einem Browserfenster. Sie funktioniert dort weiter, auch offline.
+    var installed = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    if (/\.github\.io$/i.test(location.hostname) && !installed && !/[?&]alt\b/.test(location.search)) {
       document.documentElement.style.visibility = 'hidden';
       var data = {};
       for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^tt_/.test(k)) data[k] = localStorage.getItem(k); }
