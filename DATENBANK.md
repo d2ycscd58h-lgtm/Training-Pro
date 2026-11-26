@@ -20,7 +20,7 @@ meintrainingstagebuch.com hat bei DolphinPage eine eigene Datenbank. Diese Datei
 | `feedback` | gemeinsam: lesen `owner`, hinzufügen `public`, Felder `message`, `name`, `appVersion`, `lang` | Rückmeldungen aus der App. Der Inhaber liest sie im DolphinPage-Dashboard unter „Gespeicherte Einträge“. Die App selbst kann sie nicht lesen. |
 | `diary` | privat: Regel `user` | Die Trainingsdaten einer Person, damit sie auf mehreren Geräten dieselben sind. |
 
-Beide Sammlungen sind leer und werden noch von keiner Seite benutzt.
+`feedback` wird noch von keiner Seite benutzt. `diary` nutzt die App seit dem 26. November 2026 für die Freunde-Gruppen (siehe unten).
 
 ## Schnittstelle
 
@@ -272,3 +272,20 @@ Sammlungen legt DolphinPage an, nicht der Code dieser Website. Für eine neue Sa
 - der Art: gemeinsam mit den Regeln für lesen und hinzufügen (`public` oder `owner`) und den Feldern, die eine Seite schicken darf, oder privat (`user`).
 
 Danach diese Datei um die neue Sammlung ergänzen.
+
+## Freunde-Gruppen in `app.html` (seit 26. November 2026)
+
+Der Reiter „Freunde“ nutzt die private Sammlung `diary` (Konstante `FR_COLL`). Eine Gruppe ist ein zufälliger **Gruppen-Schlüssel** (32 Bytes, Base64 mit `-` und `_`), der im Einladungslink hinter `#join=` steht und von allen Mitgliedern geteilt wird. Daraus werden wie beim Abgleich per HKDF ein Token (`Authorization: Bearer …`) und ein AES-GCM-Schlüssel abgeleitet (Info-Texte `trainingstagebuch gruppe anmelden v1` und `trainingstagebuch gruppe daten v1`). DolphinPage speichert nur verschlüsselte Einträge.
+
+Einträge unter einem Gruppen-Schlüssel:
+
+| Kennung | Inhalt (vor der Verschlüsselung) |
+| --- | --- |
+| `meta` | `{ n: Gruppenname, c: erstellt }` |
+| `m<Mitglieds-ID>` | `{ n: Spitzname, b: "Abzeichen-IDs, kommagetrennt", l: { bench, squat, dl, lp, ht, lat, pu, ohp: Bestwert kg }, t: Trainings gesamt, m: Trainings im Monat, mo: "2026-11", w: Serie in Wochen, u: Zeitpunkt }` |
+
+- Übungen und Abzeichen werden nur als IDs übertragen; Bilder und Namen setzt die App daraus zusammen. Ein Eintrag hat meist unter 1 KB.
+- Jedes Mitglied schreibt nur seinen eigenen Eintrag, gesammelt 30 s nach der letzten Änderung und nur, wenn sich etwas geändert hat.
+- „Gruppe verlassen“ löscht den eigenen Eintrag; ist danach niemand mehr in der Gruppe, wird alles unter dem Schlüssel gelöscht. „Profil löschen“ verlässt alle Gruppen.
+- Grenzen: höchstens 199 Mitglieder je Gruppe (200 Einträge je Schlüssel).
+- Wer den Einladungslink hat, kann die Gruppe lesen und beitreten. Eine eigene private Sammlung `groups` wäre sauberer; dann nur `FR_COLL` ändern.

@@ -277,6 +277,35 @@
   .sw-btn.on{background:#e5484d;border-color:#e5484d;color:#fff}
   .bw-note{margin:0 4px 10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;line-height:1.4;color:var(--text-2)}
   .bdg-card{padding:16px}.bdg-count{font-weight:700;color:var(--accent);font-size:15px}
+  .fr-list{margin-top:8px}
+  .fr-row{display:flex;align-items:center;gap:10px;width:100%;padding:10px 6px;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+  .fr-row:last-child{border-bottom:0}
+  .fr-row.me{background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:12px;border-bottom-color:transparent}
+  .fr-rk{width:26px;flex:none;text-align:center;font-weight:700;color:var(--muted)}
+  .fr-av{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex:none}
+  .fr-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .fr-row b{font-size:18px}
+  .fr-u{min-width:66px}
+  .fr-seg{margin-bottom:12px}
+  .fr-lift{padding:10px 0;border-bottom:1px solid var(--line)}
+  .fr-lift:last-child{border-bottom:0}
+  .fr-lh{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .fr-ic{width:34px;height:34px;color:var(--accent);flex:none}
+  .fr-ic svg,.fr-ic img{width:100%;height:100%;object-fit:contain}
+  .fr-lr{display:flex;gap:8px;align-items:center;padding:3px 0 3px 44px}
+  .fr-lr .fr-rk{width:auto;min-width:16px}
+  .fr-lr b{margin-left:auto}
+  .fr-lr.me{color:var(--accent);font-weight:600}
+  .fr-intro{text-align:center}
+  .fr-intro .lab{text-align:left}
+  .fr-big{font-size:44px;line-height:1.1}
+  .fr-inv{border:1.5px solid var(--accent)}
+  .fr-foot{text-align:center;margin:14px 4px 8px;line-height:1.6}
+  .fr-cmp{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+  .fr-cmp th,.fr-cmp td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right}
+  .fr-cmp th:first-child,.fr-cmp td:first-child{text-align:left;color:var(--muted)}
+  .fr-cmp td.win{color:var(--accent);font-weight:700}
+  body.fr-wait main{opacity:.55;pointer-events:none}
   .bdg-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
   .bdg{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:4px 2px;color:inherit;font:inherit;cursor:pointer}
   .bdg .bdg-svg{width:100%;max-width:74px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
@@ -345,7 +374,7 @@
 
   /* tabs */
   nav.tabs{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-bottom:var(--safe-bottom);z-index:20}
-  nav.tabs .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+  nav.tabs .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
   nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;font-size:11px;font-weight:500;color:var(--muted)}
   nav.tabs button.on{color:var(--accent)}
   nav.tabs svg{width:24px;height:24px}
@@ -1238,12 +1267,13 @@ const TABS = [
   ['today', 'Training', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>'],
   ['history', 'Verlauf', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>'],
   ['progress', 'Fortschritt', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M5 15l4-4 3 3 6-6"/><path d="M15 8h3v3"/></svg>'],
+  ['friends', 'Freunde', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.8 14.2c2.3.1 4 1.6 4.7 4.3"/></svg>'],
 ];
 function render() {
   (S.custom || []).forEach(x => { if (x.cat === 'Aufwärmen') x.cat = 'Cardio'; });
   $('#tabs').innerHTML = TABS.map(([k, l, i]) => `<button data-act="tab" data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${i}${l}</button>`).join('');
   if (S.settings) { $('#hdr').innerHTML = `<button class="btn sm" data-act="settings-close" style="padding-left:6px">${SV.back} Einstellungen</button>`; $('#main').innerHTML = viewSettings(); return; }
-  const hdr = { today: 'Training', history: 'Verlauf', progress: 'Fortschritt' }[S.tab];
+  const hdr = { today: 'Training', history: 'Verlauf', progress: 'Fortschritt', friends: LANG === 'en' ? 'Friends' : 'Freunde' }[S.tab];
   $('#hdr').textContent = S.tab === 'today' && S.ex ? '' : hdr;
   if (S.tab === 'today' && S.redit) {
     $('#hdr').innerHTML = S.pick ? `<button class="btn sm" data-act="pick-done" style="padding-left:6px">${SV.back} Routine</button>` : `<button class="btn sm" data-act="redit-done" style="padding-left:6px">${SV.back} Fertig</button>`;
@@ -1252,7 +1282,7 @@ function render() {
   if (S.tab === 'today' && S.cal) { $('#hdr').innerHTML = `<button class="btn sm" data-act="cal-close" style="padding-left:6px">${SV.back} Training</button>`; $('#main').innerHTML = viewCalendar(); return; }
   $('#hdr').innerHTML = S.tab === 'today' && S.ex ? `<button class="btn sm" data-act="close-ex" style="padding-left:6px">${SV.back} Übungen</button>` : esc(hdr);
   if (S.tab === 'today' && !S.ex && S.day === todayKey()) $('#hdr').innerHTML = greetingHTML();
-  $('#main').innerHTML = S.tab === 'today' ? (S.ex ? viewExercise() : viewToday()) : S.tab === 'history' ? viewHistory() : viewProgress();
+  $('#main').innerHTML = S.tab === 'today' ? (S.ex ? viewExercise() : viewToday()) : S.tab === 'history' ? viewHistory() : S.tab === 'friends' ? viewFriends() : viewProgress();
   if (S.tab === 'progress') wireChart();
 }
 
@@ -1286,6 +1316,9 @@ function viewSettings() {
     <div class="seg themeseg">${[['auto', 'Automatisch'], ['de', 'Deutsch'], ['en', 'English']].map(([v, l]) => `<button data-act="lang" data-v="${v}" class="${(PREF.lang || 'auto') === v ? 'on' : ''}">${l}</button>`).join('')}</div>
     <h2>Vorschau</h2>
     <div class="card row" style="gap:12px"><div style="width:54px;height:54px;color:var(--accent)">${icon('benchbb')}</div><div class="grow"><div class="title">${esc(exById('benchbb').name)}</div><div class="goal" style="margin:2px 0 0">🎯 Ziel: 82,5 kg × 8 Wdh.</div></div><button class="btn primary sm">Start</button></div>
+    <h2>${LANG === 'en' ? 'Friends' : 'Freunde'}</h2>
+    <button class="btn primary block" data-act="fr-invite">${LANG === 'en' ? '💪 Invite friends' : '💪 Freunde einladen'}</button>
+    <div class="small muted" style="margin-top:6px">${LANG === 'en' ? 'Shares a link to your group (WhatsApp, Instagram …). In the “Friends” tab you compare badges, workouts and personal bests.' : 'Teilt einen Link zu deiner Gruppe (WhatsApp, Instagram …). Im Reiter „Freunde“ vergleicht ihr Abzeichen, Trainings und Bestwerte.'}</div>
     <h2>Daten</h2>
     <button class="btn block" data-act="settings-data">Backup & Daten (im Verlauf)</button>
     <h2>Lizenz</h2>${Lic.settingsHTML().replace(/^<label class="lab">[^<]*<\/label>/, "")}
@@ -3227,12 +3260,317 @@ function hintsHTML() {
       `<button class="btn sm primary" data-act="backup-file">${en ? 'Save backup' : 'Backup sichern'}</button>`);
   return out;
 }
-{ const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); try { checkBadges(); } catch (e) {} }; }
+/* ================= Freunde & Gruppen (Datenbank von DolphinPage, siehe DATENBANK.md) ================= */
+// Eine Gruppe ist ein gemeinsamer Gruppen-Schlüssel (steht im Einladungslink hinter #join=). Daraus entstehen ein
+// Anmelde-Token, der gesendet wird, und ein Daten-Schlüssel, der das Gerät nie verlässt: DolphinPage speichert nur
+// unlesbare Daten. Je Gruppe: ein Eintrag „meta“ (Gruppenname) und je Mitglied ein Eintrag „m<id>“.
+// Gesendet wird nur: Spitzname, Abzeichen-IDs, Bestwerte von 8 Übungen, Anzahl Trainings, Serie – nie einzelne Trainings.
+// Die Bilder der Abzeichen und Übungen setzt die App aus den IDs wieder zusammen.
+const FR_HOST = 'meintrainingstagebuch.com';
+const FR_COLL = 'diary';   // private Sammlung (Regel „user“); bei einer eigenen Sammlung „groups“ nur hier ändern
+const DB = {
+  ready: () => location.hostname.replace(/^www\./, '') === FR_HOST && navigator.onLine,
+  async call(method, path, { token, body, base } = {}) {
+    const headers = {};
+    if (token) headers.Authorization = 'Bearer ' + token;
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (base !== undefined) headers['If-Match'] = String(base);
+    const r = await fetch('/_data/' + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
+    if (!r.ok) throw Object.assign(new Error('Datenbank ' + r.status), { status: r.status });
+    return r.json();
+  }
+};
+const Vault = {
+  text(bytes) { bytes = new Uint8Array(bytes); let s = ''; for (let i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  bytes(text) { return Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)); },
+  async keys(master) {
+    const base = await crypto.subtle.importKey('raw', Vault.bytes(master), 'HKDF', false, ['deriveBits', 'deriveKey']);
+    const from = info => ({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: new TextEncoder().encode(info) });
+    return {
+      token: Vault.text(await crypto.subtle.deriveBits(from('trainingstagebuch gruppe anmelden v1'), base, 256)),
+      secret: await crypto.subtle.deriveKey(from('trainingstagebuch gruppe daten v1'), base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
+    };
+  },
+  async seal(secret, data) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const box = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, secret, new TextEncoder().encode(JSON.stringify(data)));
+    return { v: 1, iv: Vault.text(iv), box: Vault.text(box) };
+  },
+  async open(secret, rec) { return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: Vault.bytes(rec.iv) }, secret, Vault.bytes(rec.box)))); }
+};
+// Verglichene Bestwerte: [Kurz-ID, Übungs-IDs, Name de, Name en]
+const FR_LIFTS = [['bench', ['benchbb', 'bench'], 'Bankdrücken', 'Bench press'], ['squat', ['squat'], 'Kniebeuge', 'Squat'], ['dl', ['deadlift', 'sumodl'], 'Kreuzheben', 'Deadlift'],
+  ['lp', ['legpress'], 'Beinpresse', 'Leg press'], ['ht', ['hipthrust'], 'Hip Thrust', 'Hip thrust'], ['lat', ['latpull'], 'Latzug', 'Lat pulldown'],
+  ['pu', ['pullup'], 'Klimmzüge', 'Pull-ups'], ['ohp', ['ohp'], 'Schulterdrücken', 'Overhead press']];
+const FR_COLORS = ['#3987e5', '#199e70', '#d95926', '#9085e9', '#d55181', '#e04a4a', '#1b9fb0', '#c98500'];
+const Fr = {
+  busy: false, err: '', t: null, keyCache: {},
+  st() { return Object.assign({ me: '', nick: '', groups: [], cache: {}, sent: {}, metric: 'badges', pending: '' }, lsGet('tt_friends') || {}); },
+  save(s) { lsSet('tt_friends', s); },
+  edit(fn) { const s = Fr.st(); fn(s); Fr.save(s); return s; },
+  seen() { return lsGet('tt_frseen') || {}; },
+  setSeen(key, id, u) { const x = Fr.seen(); (x[key] = x[key] || {})[id] = u; lsSet('tt_frseen', x); },
+  k(key) { return Fr.keyCache[key] || (Fr.keyCache[key] = Vault.keys(key)); },
+  rnd(n) { return Vault.text(crypto.getRandomValues(new Uint8Array(n))); },
+  host: () => location.hostname.replace(/^www\./, '') === FR_HOST,
+  stats() {
+    const s = Fr.st(), keys = sortedDayKeys(), mo = todayKey().slice(0, 7), l = {};
+    const won = computeBadges().filter(b => b.at).map(b => b.id);
+    FR_LIFTS.forEach(([k, ids]) => {
+      let best = 0;
+      keys.forEach(d => (S.days[d].entries || []).forEach(e => { if (!ids.includes(e.exId)) return; validSets(e.sets).forEach(x => { if (x.wu || !(x.r >= 1)) return; const w = effW(e.exId, x.w); if (w > best) best = w; }); }));
+      if (best > 0) l[k] = Math.round(best * 10) / 10;
+    });
+    const wk = k => { const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+    const weeks = new Set(keys.map(wk)), d = new Date(wk(todayKey()) + 'T12:00:00');
+    if (!weeks.has(d.toISOString().slice(0, 10))) d.setDate(d.getDate() - 7);
+    let w = 0; while (weeks.has(d.toISOString().slice(0, 10))) { w++; d.setDate(d.getDate() - 7); }
+    return { n: (s.nick || '').slice(0, 24), b: won.join(','), l, t: keys.length, m: keys.filter(k => k.startsWith(mo)).length, mo, w, u: Date.now() };
+  },
+  async put(key, id, data) {
+    const { token, secret } = await Fr.k(key), body = await Vault.seal(secret, data);
+    for (let a = 0; a < 3; a++) {
+      try { const r = await DB.call('PUT', FR_COLL + '/' + id, { token, body, base: (Fr.seen()[key] || {})[id] || 0 }); Fr.setSeen(key, id, r.updatedAt); return; }
+      catch (e) {
+        if (e.status !== 412) throw e;
+        try { const cur = await DB.call('GET', FR_COLL + '/' + id, { token }); Fr.setSeen(key, id, cur.updatedAt); }
+        catch (e2) { if (e2.status !== 404) throw e2; Fr.setSeen(key, id, 0); }
+      }
+    }
+    throw Object.assign(new Error('Speichern nicht möglich'), { status: 412 });
+  },
+  async list(key) {
+    const { token, secret } = await Fr.k(key), out = { meta: null, members: [] };
+    let cursor = '';
+    do {
+      const page = await DB.call('GET', FR_COLL + '?limit=50' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''), { token });
+      for (const r of page.records) {
+        let d; try { d = await Vault.open(secret, r.data); } catch (e) { continue; }
+        if (r.id === 'meta') out.meta = d; else if (/^m[A-Za-z0-9_-]+$/.test(r.id)) out.members.push(Object.assign({ id: r.id.slice(1) }, d));
+      }
+      cursor = page.next;
+    } while (cursor);
+    return out;
+  },
+  ensureMe() { const s = Fr.st(); if (!s.me) { s.me = Fr.rnd(12); Fr.save(s); } return s.me; },
+  async pushMine(key, force) {
+    const me = Fr.ensureMe(), data = Fr.stats(), sig = JSON.stringify(Object.assign({}, data, { u: 0 }));
+    if (!force && Fr.st().sent[key] === sig) return false;
+    await Fr.put(key, 'm' + me, data);
+    Fr.edit(s => { s.sent[key] = sig; }); return true;
+  },
+  async refresh(key) {
+    const g = await Fr.list(key), me = Fr.st().me;
+    if (!g.meta && !g.members.length) throw Object.assign(new Error('Gruppe nicht gefunden'), { status: 404 });
+    if (me && !g.members.some(m => m.id === me)) { await Fr.pushMine(key, true); g.members.push(Object.assign({ id: me }, Fr.stats())); }
+    Fr.edit(s => { s.cache[key] = { meta: g.meta, members: g.members, at: Date.now() }; const gr = s.groups.find(x => x.key === key); if (gr && g.meta && g.meta.n) gr.name = g.meta.n; });
+    return g;
+  },
+  async refreshAll() {
+    if (!DB.ready() || Fr.busy) return; Fr.busy = true; Fr.err = '';
+    try { for (const g of Fr.st().groups) { try { await Fr.pushMine(g.key); await Fr.refresh(g.key); } catch (e) { if (e.status === 404) Fr.err = 'gone'; else throw e; } } }
+    catch (e) { Fr.err = e.status === 429 ? 'busy' : 'net'; }
+    Fr.busy = false;
+    if (S.tab === 'friends' && !S.settings && !document.querySelector('.modal-bg')) render();
+  },
+  async create(name) {
+    const key = Fr.rnd(32); Fr.ensureMe();
+    await Fr.put(key, 'meta', { n: name.slice(0, 40), c: Date.now() });
+    Fr.edit(s => { s.groups.push({ key, name: name.slice(0, 40), at: Date.now() }); });
+    await Fr.pushMine(key, true); await Fr.refresh(key); return key;
+  },
+  async peek(key) { const g = await Fr.list(key); if (!g.meta) throw Object.assign(new Error('Gruppe nicht gefunden'), { status: 404 }); return g; },
+  async join(key) {
+    const g = await Fr.peek(key);
+    Fr.edit(s => { if (!s.groups.some(x => x.key === key)) s.groups.push({ key, name: g.meta.n || '', at: Date.now() }); s.pending = ''; });
+    await Fr.pushMine(key, true); await Fr.refresh(key);
+  },
+  async leave(key) {
+    const { token } = await Fr.k(key), me = Fr.st().me;
+    try { await DB.call('DELETE', FR_COLL + '/m' + me, { token }); } catch (e) { if (e.status !== 404) throw e; }
+    try { const g = await Fr.list(key); if (!g.members.length) await DB.call('DELETE', FR_COLL, { token }); } catch (e) {}
+    Fr.edit(s => { s.groups = s.groups.filter(x => x.key !== key); delete s.cache[key]; delete s.sent[key]; });
+    const x = Fr.seen(); delete x[key]; lsSet('tt_frseen', x);
+  },
+  schedule() {
+    if (!Fr.host() || !Fr.st().groups.length) return;
+    clearTimeout(Fr.t);
+    Fr.t = setTimeout(async () => { if (!DB.ready()) return; for (const g of Fr.st().groups.slice(0, 8)) { try { await Fr.pushMine(g.key); } catch (e) { break; } } }, 30000);
+  }
+};
+// Einladungslink #join=<Gruppen-Schlüssel>: merken, Adresse bereinigen, Reiter „Freunde“ öffnen
+(function () {
+  const m = /[#&]join=([A-Za-z0-9_-]{43})/.exec(location.hash); if (!m) return;
+  Fr.edit(s => { if (!s.groups.some(g => g.key === m[1])) s.pending = m[1]; });
+  S.tab = 'friends';
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+})();
+const frT = (de, en) => LANG === 'en' ? en : de;
+const frColor = id => FR_COLORS[[...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % FR_COLORS.length];
+const frAv = m => `<span class="fr-av" style="background:${frColor(m.id)}">${esc((m.n || '?').trim().charAt(0).toUpperCase() || '?')}</span>`;
+const frBcount = m => m.b ? m.b.split(',').filter(Boolean).length : 0;
+const frMonth = m => m.mo === todayKey().slice(0, 7) ? (m.m || 0) : 0;
+function frBadge(id, local) {
+  if (local[id]) return local[id];
+  const T4 = { b: ['bronze', '+10 %'], s: ['silver', '+25 %'], g: ['gold', '+50 %'], d: ['diamond', '×2'] };
+  let m = /^ex:(.+):([bsgd])$/.exec(id);
+  if (m) { const x = exById(m[1]); if (!x) return null; const [tier, lbl] = T4[m[2]]; return { id, tier, exId: m[1], big: lbl.replace(' ', ''), unit: '', name: x.name + ' ' + lbl }; }
+  m = /^hold:(.+):(\d+)$/.exec(id);
+  if (m) { const sec = +m[2], tier = sec >= 300 || (m[1] === 'sideplank' && sec >= 120) ? 'diamond' : sec >= 180 || sec >= 90 && m[1] === 'sideplank' ? 'gold' : sec >= 120 || sec >= 60 && m[1] === 'sideplank' ? 'silver' : 'bronze';
+    return { id, tier, big: sec >= 60 && sec % 60 === 0 ? sec / 60 : sec, unit: sec >= 60 && sec % 60 === 0 ? 'MIN' : 'SEK', name: (m[1] === 'plank' ? 'Plank' : frT('Seitstütz', 'Side plank')) + ' ' + sec + ' s' }; }
+  return null;
+}
+function frBadgeList(m) {
+  const local = {}; computeBadges().forEach(b => local[b.id] = b);
+  const order = { elite: 0, diamond: 1, gold: 2, silver: 3, bronze: 4 };
+  return (m.b || '').split(',').filter(Boolean).map(id => frBadge(id, local)).filter(Boolean).sort((a, b) => order[a.tier] - order[b.tier]);
+}
+const FR_METRICS = () => [['badges', frT('Abzeichen', 'Badges')], ['month', frT('Monat', 'Month')], ['streak', frT('Serie', 'Streak')], ['lifts', frT('Bestwerte', 'Bests')]];
+function frRanking(key, members, metric) {
+  const me = Fr.st().me;
+  if (metric === 'lifts') {
+    const rows = FR_LIFTS.map(([k, ids, de, en]) => {
+      const list = members.filter(m => m.l && m.l[k] > 0).sort((a, b) => b.l[k] - a.l[k]); if (!list.length) return '';
+      const x = exById(ids[0]) || {};
+      return `<div class="fr-lift"><div class="fr-lh"><span class="fr-ic">${icon(x.icon)}</span><b>${LANG === 'en' ? en : de}</b></div>${list.map((m, i) => `<div class="fr-lr ${m.id === me ? 'me' : ''}"><span class="fr-rk">${i + 1}</span>${esc(m.n || '?')}<b>${fmtKg(m.l[k])} kg</b></div>`).join('')}</div>`;
+    }).join('');
+    return rows || `<div class="small muted" style="padding:8px 2px">${frT('Noch keine Bestwerte bei Bankdrücken, Kniebeuge, Kreuzheben, Beinpresse, Hip Thrust, Latzug, Klimmzügen oder Schulterdrücken.', 'No personal bests yet for the compared exercises.')}</div>`;
+  }
+  const val = { badges: frBcount, month: frMonth, streak: m => m.w || 0 }[metric];
+  const unit = { badges: frT('Abzeichen', 'badges'), month: frT('Trainings', 'workouts'), streak: frT('Wochen', 'weeks') }[metric];
+  const list = members.slice().sort((a, b) => val(b) - val(a) || (a.n || '').localeCompare(b.n || ''));
+  let rank = 0, prev = null;
+  return list.map((m, i) => { const v = val(m); if (v !== prev) { rank = i + 1; prev = v; }
+    return `<button class="fr-row ${m.id === me ? 'me' : ''}" data-act="fr-member" data-key="${key}" data-id="${esc(m.id)}"><span class="fr-rk">${rank <= 3 && v > 0 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}</span>${frAv(m)}<span class="grow fr-nm">${esc(m.n || '?')}${m.id === me ? ` <span class="muted small">(${frT('du', 'you')})</span>` : ''}</span><b>${v}</b><span class="small muted fr-u">${unit}</span></button>`; }).join('');
+}
+function viewFriends() {
+  const s = Fr.st(), T = frT;
+  if (!Fr.host()) {
+    const alt = location.origin + location.pathname;
+    return `<div class="card fr-intro"><div class="fr-big">🏆</div><h2 style="margin:6px 0">${T('Mit Freunden messen', 'Compete with friends')}</h2><div class="t2 small" style="line-height:1.5">${T('Gruppen und Ranglisten gibt es unter der neuen Adresse <b>meintrainingstagebuch.com</b>. Öffne die App dort einmal – deine Trainingsdaten ziehen automatisch mit um.', 'Groups and leaderboards are available at the new address <b>meintrainingstagebuch.com</b>. Open the app there once – your data moves along automatically.')}</div>
+      <a class="btn primary block" style="margin-top:12px" href="${esc(alt)}" target="_blank" rel="noopener">${T('Neue Adresse öffnen', 'Open new address')}</a></div>`;
+  }
+  const privacy = `<div class="small muted" style="margin-top:10px;line-height:1.45">🔒 ${T('Geteilt werden nur Spitzname, Abzeichen, Anzahl Trainings, Serie und Bestwerte bei 8 Übungen – verschlüsselt, nur für deine Gruppen lesbar. Deine einzelnen Trainings bleiben auf deinem Handy.', 'Only your nickname, badges, workout counts, streak and bests on 8 exercises are shared – encrypted, readable only by your groups. Your individual workouts stay on your phone.')}</div>`;
+  if (!s.nick) return `<div class="card fr-intro"><div class="fr-big">🏆</div><h2 style="margin:6px 0">${T('Mit Freunden messen', 'Compete with friends')}</h2>
+    <div class="t2 small" style="line-height:1.5">${s.pending ? T('Du wurdest in eine Gruppe eingeladen! ', 'You were invited to a group! ') : ''}${T('Erstelle eine Gruppe, lade Freunde ein und vergleicht Abzeichen, Trainings und Bestwerte.', 'Create a group, invite friends and compare badges, workouts and personal bests.')}</div>
+    <label class="lab" style="margin-top:14px">${T('Dein Spitzname', 'Your nickname')}</label>
+    <input class="f" id="fr-nick" maxlength="24" value="${esc(PREF.name || '')}" placeholder="${T('z. B. Oli', 'e.g. Alex')}" style="height:50px;font-size:17px;font-weight:600">
+    <button class="btn primary block" data-act="fr-start" style="margin-top:12px">${s.pending ? T('Speichern & Gruppe beitreten', 'Save & join group') : T('Los geht\'s', 'Let\'s go')}</button>${privacy}</div>`;
+  let out = '';
+  if (!navigator.onLine) out += `<div class="small muted" style="margin:0 2px 10px">📴 ${T('Offline – du siehst den letzten Stand.', 'Offline – showing the last saved state.')}</div>`;
+  else if (Fr.err === 'net') out += `<div class="small muted" style="margin:0 2px 10px">⚠️ ${T('Gerade keine Verbindung zur Datenbank – du siehst den letzten Stand.', 'Can\'t reach the database right now – showing the last saved state.')}</div>`;
+  if (s.pending) out += `<div class="card fr-inv"><b>📩 ${T('Einladung', 'Invitation')}</b><div class="t2 small" style="margin:4px 0 10px">${T('Du wurdest in eine Gruppe eingeladen.', 'You were invited to a group.')}${s.pendingName ? ` <b>„${esc(s.pendingName)}“</b>` : ''}</div>
+    <div class="row" style="gap:8px"><button class="btn primary grow" data-act="fr-join">${T('Beitreten', 'Join')}</button><button class="btn" data-act="fr-decline">${T('Ablehnen', 'Decline')}</button></div></div>`;
+  const metric = s.metric || 'badges';
+  if (s.groups.length) out += `<div class="seg fr-seg">${FR_METRICS().map(([k, l]) => `<button data-act="fr-metric" data-v="${k}" class="${metric === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  s.groups.forEach(g => {
+    const c = s.cache[g.key], members = c ? c.members : [];
+    out += `<div class="card fr-group"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><div class="grow" style="min-width:0"><h2 style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name || T('Gruppe', 'Group'))}</h2><div class="small muted">${members.length} ${members.length === 1 ? T('Mitglied', 'member') : T('Mitglieder', 'members')}</div></div>
+      <button class="btn sm primary" data-act="fr-invite" data-key="${g.key}">${T('+ Einladen', '+ Invite')}</button><button class="btn sm" data-act="fr-gmenu" data-key="${g.key}" aria-label="${T('Mehr', 'More')}">⋯</button></div>
+      <div class="fr-list">${members.length ? frRanking(g.key, members, metric) : `<div class="small muted" style="padding:10px 2px">${Fr.busy ? T('Wird geladen …', 'Loading …') : T('Noch keine Daten.', 'No data yet.')}</div>`}</div>
+      ${members.length === 1 ? `<div class="small t2" style="margin-top:8px">${T('Noch allein hier – lade Freunde ein, dann wird es spannend! 💪', 'Just you so far – invite friends to make it exciting! 💪')}</div>` : ''}</div>`;
+  });
+  if (!s.groups.length && !s.pending) out += `<div class="card fr-intro"><div class="fr-big">👥</div><h2 style="margin:6px 0">${T('Noch keine Gruppe', 'No group yet')}</h2><div class="t2 small">${T('Erstelle eine Gruppe und schick den Link an deine Trainingspartner.', 'Create a group and send the link to your training partners.')}</div></div>`;
+  out += `<button class="btn block" data-act="fr-new" style="margin-top:4px">${T('+ Neue Gruppe erstellen', '+ Create new group')}</button>
+    <div class="fr-foot small muted">${T('Spitzname', 'Nickname')}: <b>${esc(s.nick)}</b> · <button class="linkbtn small" data-act="fr-nick">${T('ändern', 'change')}</button> · <button class="linkbtn small" data-act="fr-delete">${T('Profil löschen', 'Delete profile')}</button>${privacy}</div>`;
+  const stale = s.groups.some(g => !s.cache[g.key] || Date.now() - s.cache[g.key].at > 60000);
+  if (stale && DB.ready() && !Fr.busy && Date.now() - (Fr.tried || 0) > 30000) { Fr.tried = Date.now(); setTimeout(() => Fr.refreshAll(), 0); }
+  return out;
+}
+function frMember(key, id) {
+  const s = Fr.st(), c = s.cache[key]; if (!c) return;
+  const m = c.members.find(x => x.id === id); if (!m) return;
+  const me = c.members.find(x => x.id === s.me) || Object.assign({ id: s.me }, Fr.stats()), self = m.id === s.me, T = frT;
+  const row = (l, a, b, unit = '') => { const w = a > b ? 'a' : b > a ? 'b' : ''; return `<tr><td>${l}</td><td class="${w === 'a' ? 'win' : ''}">${a ? fmtKg(a) + unit : '–'}</td>${self ? '' : `<td class="${w === 'b' ? 'win' : ''}">${b ? fmtKg(b) + unit : '–'}</td>`}</tr>`; };
+  const lifts = FR_LIFTS.filter(([k]) => (m.l && m.l[k]) || (!self && me.l && me.l[k])).map(([k, , de, en]) => row(LANG === 'en' ? en : de, (m.l || {})[k] || 0, (me.l || {})[k] || 0, ' kg')).join('');
+  const badges = frBadgeList(m);
+  const bg = document.createElement('div'); bg.className = 'modal-bg bdg-full';
+  bg.innerHTML = `<div class="modal"><div class="row" style="justify-content:space-between;align-items:center;gap:10px"><div class="row" style="gap:10px;align-items:center;min-width:0">${frAv(m)}<h3 style="margin:0;overflow:hidden;text-overflow:ellipsis">${esc(m.n || '?')}${self ? '' : ` <span class="muted" style="font-weight:500">${T('vs. du', 'vs. you')}</span>`}</h3></div><button class="btn sm" data-close>${T('Schließen', 'Close')}</button></div>
+    <div class="bdg-scroll"><table class="fr-cmp"><thead><tr><th></th><th>${esc(m.n || '?')}</th>${self ? '' : `<th>${T('Du', 'You')}</th>`}</tr></thead><tbody>
+    ${row(T('Abzeichen', 'Badges'), frBcount(m), frBcount(me))}${row(T('Trainings gesamt', 'Workouts total'), m.t || 0, me.t || 0)}${row(T('Trainings diesen Monat', 'Workouts this month'), frMonth(m), frMonth(me))}${row(T('Serie (Wochen)', 'Streak (weeks)'), m.w || 0, me.w || 0)}${lifts}</tbody></table>
+    <div class="bdg-h" style="margin-top:14px">${T('Abzeichen von', 'Badges of')} ${esc(m.n || '?')}<span>${badges.length}</span></div>
+    <div class="bdg-grid">${badges.map(b => `<div class="bdg won">${b.exId ? `<span class="bdg-ex">${icon((exById(b.exId) || {}).icon)}</span>` : ''}${badgeSVG(b)}<span class="bdg-n">${esc(b.exId ? b.big : b.name)}</span></div>`).join('') || `<div class="small muted">${T('Noch keine Abzeichen.', 'No badges yet.')}</div>`}</div></div></div>`;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-close]')) bg.remove(); });
+  document.body.appendChild(bg);
+}
+async function frShare(key) {
+  const s = Fr.st(), g = s.groups.find(x => x.key === key), name = g && g.name || frT('meine Gruppe', 'my group'), T = frT;
+  const url = 'https://' + FR_HOST + '/app.html#join=' + key;
+  const text = T(`💪 Lass uns gegeneinander antreten! Ich tracke mein Training mit dem Trainingstagebuch. Tritt meiner Gruppe „${name}“ bei – dann vergleichen wir Abzeichen, Trainings und Bestwerte. 7 Tage gratis testen: ${url}`,
+    `💪 Let's compete! I track my workouts with Trainingstagebuch. Join my group "${name}" and we'll compare badges, workouts and personal bests. Try it free for 7 days: ${url}`);
+  try { gcEvent('freunde-einladen'); } catch (e) {}
+  if (navigator.share) { try { await navigator.share({ title: 'Trainingstagebuch', text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(text); toast(T('Einladung kopiert – füge sie in WhatsApp & Co. ein.', 'Invite copied – paste it into WhatsApp etc.')); }
+  catch (e) { modal({ title: T('Einladung', 'Invite'), body: `<textarea class="f" readonly style="height:150px">${esc(text)}</textarea>`, cancel: '' }); }
+}
+function frPrompt(title, value, ph) {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal"><h3>${esc(title)}</h3><input class="f" id="fr-in" maxlength="40" value="${esc(value || '')}" placeholder="${esc(ph || '')}" style="margin-top:10px">
+      <div class="acts"><button class="btn" data-r="0">${frT('Abbrechen', 'Cancel')}</button><button class="btn primary" data-r="1">OK</button></div></div>`;
+    bg.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b || e.target === bg) { const v = b && b.dataset.r === '1' ? bg.querySelector('#fr-in').value.trim() : null; bg.remove(); res(v); } });
+    document.body.appendChild(bg); setTimeout(() => { const i = bg.querySelector('#fr-in'); i.focus(); i.select(); }, 50);
+  });
+}
+function frPick(title, items) {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal"><h3>${esc(title)}</h3><div style="display:grid;gap:8px;margin-top:10px">${items.map(([v, l, cls]) => `<button class="btn block ${cls || ''}" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>
+      <div class="acts"><button class="btn" data-v="">${frT('Abbrechen', 'Cancel')}</button></div></div>`;
+    bg.addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b || e.target === bg) { bg.remove(); res(b ? b.dataset.v : ''); } });
+    document.body.appendChild(bg);
+  });
+}
+const frFail = e => toast(e && e.status === 404 ? frT('Diese Gruppe gibt es nicht mehr.', 'This group no longer exists.') : e && e.status === 429 ? frT('Zu viele Anfragen – bitte gleich nochmal.', 'Too many requests – try again in a moment.') : !navigator.onLine ? frT('Keine Internetverbindung.', 'No internet connection.') : frT('Das hat gerade nicht geklappt – bitte später nochmal.', 'That didn\'t work – please try again later.'));
+async function frRun(fn) { if (!DB.ready()) { frFail(); return false; } document.body.classList.add('fr-wait'); try { await fn(); return true; } catch (e) { frFail(e); return false; } finally { document.body.classList.remove('fr-wait'); render(); } }
+async function frInvite(key) {
+  const T = frT; let s = Fr.st();
+  if (!Fr.host()) { S.settings = false; S.tab = 'friends'; render(); return; }
+  if (!s.nick) { S.settings = false; S.tab = 'friends'; render(); window.scrollTo(0, 0); toast(T('Wähle zuerst deinen Spitznamen.', 'Choose your nickname first.')); return; }
+  if (!key) {
+    if (!s.groups.length) { let k2 = ''; if (!await frRun(async () => { k2 = await Fr.create(T(`Gruppe von ${s.nick}`, `${s.nick}'s group`)); })) return; key = k2; }
+    else if (s.groups.length === 1) key = s.groups[0].key;
+    else { key = await frPick(T('Zu welcher Gruppe einladen?', 'Invite to which group?'), s.groups.map(g => [g.key, g.name || T('Gruppe', 'Group')])); if (!key) return; }
+  }
+  frShare(key);
+}
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act^="fr-"]'); if (!t) return;
+  e.stopPropagation(); e.preventDefault();
+  const a = t.dataset.act, T = frT, s = Fr.st();
+  if (a === 'fr-start') {
+    const n = (document.getElementById('fr-nick') || {}).value; const nick = String(n || '').trim().slice(0, 24);
+    if (!nick) { toast(T('Bitte gib einen Spitznamen ein.', 'Please enter a nickname.')); return; }
+    Fr.edit(x => { x.nick = nick; }); Fr.ensureMe();
+    if (s.pending) await frRun(() => Fr.join(s.pending)); else render();
+  } else if (a === 'fr-join') { await frRun(() => Fr.join(s.pending)); }
+  else if (a === 'fr-decline') { Fr.edit(x => { x.pending = ''; x.pendingName = ''; }); render(); }
+  else if (a === 'fr-metric') { Fr.edit(x => { x.metric = t.dataset.v; }); render(); }
+  else if (a === 'fr-member') frMember(t.dataset.key, t.dataset.id);
+  else if (a === 'fr-invite') frInvite(t.dataset.key);
+  else if (a === 'fr-new') { const n = await frPrompt(T('Neue Gruppe', 'New group'), '', T('z. B. Gym-Jungs', 'e.g. Gym crew')); if (n) await frRun(() => Fr.create(n)); }
+  else if (a === 'fr-nick') { const n = await frPrompt(T('Spitzname ändern', 'Change nickname'), s.nick); if (n) { Fr.edit(x => { x.nick = n.slice(0, 24); }); render(); frRun(async () => { for (const g of Fr.st().groups) await Fr.pushMine(g.key, true); }); } }
+  else if (a === 'fr-gmenu') {
+    const key = t.dataset.key, g = s.groups.find(x => x.key === key);
+    const v = await frPick(g ? g.name : T('Gruppe', 'Group'), [['inv', T('Freunde einladen', 'Invite friends'), 'primary'], ['ref', T('Aktualisieren', 'Refresh')], ['leave', T('Gruppe verlassen', 'Leave group'), 'danger']]);
+    if (v === 'inv') frShare(key);
+    else if (v === 'ref') { Fr.tried = 0; Fr.edit(x => { if (x.cache[key]) x.cache[key].at = 0; }); render(); }
+    else if (v === 'leave' && await modal({ title: T('Gruppe verlassen?', 'Leave group?'), body: esc(T('Deine Daten in dieser Gruppe werden gelöscht. Mit dem Einladungslink kannst du jederzeit wieder beitreten.', 'Your data in this group will be deleted. You can rejoin any time with the invite link.')), ok: T('Verlassen', 'Leave'), cancel: T('Abbrechen', 'Cancel'), danger: true })) await frRun(() => Fr.leave(key));
+  } else if (a === 'fr-delete') {
+    if (!await modal({ title: T('Profil löschen?', 'Delete profile?'), body: esc(T('Du verlässt alle Gruppen und deine geteilten Daten werden gelöscht. Deine Trainings auf dem Handy bleiben erhalten.', 'You leave all groups and your shared data is deleted. Your workouts on this phone are kept.')), ok: T('Löschen', 'Delete'), cancel: T('Abbrechen', 'Cancel'), danger: true })) return;
+    await frRun(async () => { for (const g of Fr.st().groups) await Fr.leave(g.key); Fr.edit(x => { x.nick = ''; x.groups = []; x.cache = {}; x.sent = {}; }); });
+  }
+}, true);
+// Name der Gruppe aus der Einladung nachladen (nur Anzeige)
+setTimeout(async () => { const s = Fr.st(); if (!s.pending || s.pendingName || !DB.ready()) return; try { const g = await Fr.peek(s.pending); Fr.edit(x => { x.pendingName = (g.meta && g.meta.n) || ''; }); if (S.tab === 'friends') render(); } catch (e) { if (e.status === 404) { Fr.edit(x => { x.pending = ''; }); toast(frT('Dieser Einladungslink ist nicht mehr gültig.', 'This invite link is no longer valid.')); render(); } } }, 1500);
+window.addEventListener('online', () => { if (S.tab === 'friends') render(); Fr.schedule(); });
+
+{ const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); try { checkBadges(); } catch (e) {} try { Fr.schedule(); } catch (e) {} }; }
 document.addEventListener('click', e => { const o = e.target.closest('[data-os]'); if (!o) return; const H = lsGet('tt_hints') || {}; H.os = o.dataset.os; lsSet('tt_hints', H); render(); });
 document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
 // Cookiefreie Besucherzählung (GoatCounter) – nur auf der echten Seite, nicht in Vorschau/Tests
 const GC_URL = 'https://trainingstagebuch.goatcounter.com/count';
-(function () { if (!/github\.io$/.test(location.hostname)) return; const sc = document.createElement('script'); sc.async = true; sc.src = 'https://gc.zgo.at/count.js'; sc.dataset.goatcounter = GC_URL; document.head.appendChild(sc); })();
+(function () { if (!/github\.io$|meintrainingstagebuch\.com$/.test(location.hostname)) return; const sc = document.createElement('script'); sc.async = true; sc.src = 'https://gc.zgo.at/count.js'; sc.dataset.goatcounter = GC_URL; document.head.appendChild(sc); })();
 function gcEvent(name) { try { if (window.goatcounter && goatcounter.count) goatcounter.count({ path: name, title: name, event: true }); } catch (e) {} }
 /* ================= Verkauf: Testphase + Lizenz (Polar) ================= */
 // >>> Diese Werte aus dem Polar-Dashboard eintragen <<<
