@@ -277,6 +277,11 @@
   .sw-btn.on{background:#e5484d;border-color:#e5484d;color:#fff}
   .bw-note{margin:0 4px 10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;line-height:1.4;color:var(--text-2)}
   .bdg-card{padding:16px}.bdg-count{font-weight:700;color:var(--accent);font-size:15px}
+  .mv-ic{font-size:40px;text-align:center}
+  .modal.mv h3{text-align:center}
+  .modal.mv{max-height:calc(100vh - 40px);overflow:auto}
+  .modal.mv a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center}
+  .mv-steps{margin:12px 0;padding-left:20px;display:grid;gap:8px;font-size:14px;line-height:1.45}
   .fr-list{margin-top:8px}
   .fr-row{display:flex;align-items:center;gap:10px;width:100%;padding:10px 6px;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
   .fr-row:last-child{border-bottom:0}
@@ -1294,7 +1299,7 @@ function greetingHTML() {
   return `<span class="hi">${hi}${n ? ' ' + esc(n) : ''} 👋</span><span class="hi-sub">${sub}${n ? '' : ' <button class="linkbtn" data-act="settings">Namen festlegen</button>'}</span>`;
 }
 function viewSettings() {
-  return `<label class="lab" style="margin-top:4px">Dein Name</label>
+  return `${OLD_HOST ? `<div class="card fr-inv" style="margin-bottom:14px"><b>📦 ${LANG === 'en' ? 'The app has moved' : 'Die App ist umgezogen'}</b><div class="small t2" style="margin:4px 0 10px">${LANG === 'en' ? 'New address: meintrainingstagebuch.com – with friends & groups.' : 'Neue Adresse: meintrainingstagebuch.com – mit Freunden & Gruppen.'}</div><button class="btn primary block" data-act="move-guide">${LANG === 'en' ? 'Show guide' : 'Anleitung anzeigen'}</button></div>` : ''}<label class="lab" style="margin-top:4px">Dein Name</label>
     <input class="f" data-pref="name" value="${esc(PREF.name)}" placeholder="Dein Vorname" autocomplete="given-name" style="height:50px;font-size:17px;font-weight:600">
     <div class="small muted" style="margin-top:6px">Die App begrüßt dich damit: „Hallo ${esc(PREF.name || 'Alex')}, bereit für dein nächstes Training?“</div>
     <label class="lab" style="margin-top:14px">${LANG === 'en' ? 'Body weight (kg)' : 'Körpergewicht (kg)'}</label>
@@ -3260,6 +3265,52 @@ function hintsHTML() {
       `<button class="btn sm primary" data-act="backup-file">${en ? 'Save backup' : 'Backup sichern'}</button>`);
   return out;
 }
+/* ================= Umzug: installierte App unter der alten GitHub-Adresse ================= */
+// Eine vom Home-Bildschirm gestartete App bleibt auf der alten Adresse (siehe Umzug ganz oben). Einmal erklären,
+// wie man die App unter meintrainingstagebuch.com neu auf den Home-Bildschirm legt; Daten und Lizenz ziehen mit.
+const OLD_HOST = /\.github\.io$/i.test(location.hostname);
+const IS_INSTALLED = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+function moveURL() {
+  const data = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^tt_/.test(k)) data[k] = localStorage.getItem(k); }
+  const b = new TextEncoder().encode(JSON.stringify(data)); let o = '';
+  for (let i = 0; i < b.length; i += 32768) o += String.fromCharCode.apply(null, b.subarray(i, i + 32768));
+  return 'https://meintrainingstagebuch.com/app.html#tt-move=' + btoa(o).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function moveGuide() {
+  const en = LANG === 'en', T = (d, e) => en ? e : d, H = lsGet('tt_hints') || {};
+  H.move = Date.now(); lsSet('tt_hints', H);
+  const android = (H.os || (/android/i.test(navigator.userAgent) ? 'android' : 'ios')) === 'android';
+  const steps = android
+    ? [T('Tippe unten auf <b>„Neue App öffnen“</b>. Sie öffnet sich in Chrome unter <b>meintrainingstagebuch.com</b> – deine Trainings, Einstellungen und deine Lizenz kommen automatisch mit.', 'Tap <b>“Open new app”</b> below. It opens in Chrome at <b>meintrainingstagebuch.com</b> – your workouts, settings and licence come along automatically.'),
+       T('Öffnet sie sich in einem kleinen Fenster, tippe auf <b>„In Chrome öffnen“</b>.', 'If it opens in a small window, tap <b>“Open in Chrome”</b>.'),
+       T('In Chrome oben rechts auf <b>⋮</b> → <b>„App installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b>.', 'In Chrome tap <b>⋮</b> (top right) → <b>“Install app”</b> or <b>“Add to Home screen”</b>.')]
+    : [T('Tippe unten auf <b>„Neue App öffnen“</b>. Sie öffnet sich in Safari unter <b>meintrainingstagebuch.com</b> – deine Trainings, Einstellungen und deine Lizenz kommen automatisch mit.', 'Tap <b>“Open new app”</b> below. It opens in Safari at <b>meintrainingstagebuch.com</b> – your workouts, settings and licence come along automatically.'),
+       T('Öffnet sie sich in einem kleinen Fenster, tippe auf das <b>Safari-Symbol</b> („In Safari öffnen“).', 'If it opens in a small window, tap the <b>Safari icon</b> (“Open in Safari”).'),
+       T('In Safari auf <b>Teilen</b> (□↑, ggf. erst <b>•••</b>) → <b>„Zum Home-Bildschirm“</b>.', 'In Safari tap <b>Share</b> (□↑, maybe first <b>•••</b>) → <b>“Add to Home Screen”</b>.')];
+  steps.push(T('Neue App öffnen und kurz prüfen, ob deine Trainings da sind. Danach das <b>alte App-Symbol löschen</b> (gedrückt halten → „App entfernen“).', 'Open the new app and check your workouts are there. Then <b>delete the old app icon</b> (press and hold → “Remove app”).'));
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal mv"><div class="mv-ic">📦</div><h3>${T('Die App ist umgezogen', 'The app has moved')}</h3>
+    <div class="t2 small" style="line-height:1.5">${T('Neue Adresse: <b>meintrainingstagebuch.com</b>. Dort gibt es alle neuen Funktionen wie <b>Freunde & Gruppen</b>. Leg die App einmal neu auf deinen Home-Bildschirm – in 1 Minute erledigt:', 'New address: <b>meintrainingstagebuch.com</b>. That\'s where new features like <b>friends & groups</b> live. Add the app to your home screen once more – takes 1 minute:')}</div>
+    <ol class="mv-steps">${steps.map(x => `<li>${x}</li>`).join('')}</ol>
+    <div class="small muted" style="line-height:1.45">🔑 ${T('Deinen Lizenzcode musst du normalerweise nicht neu eingeben. Falls die neue App doch danach fragt: einfach den Code aus deiner Kauf-E-Mail eingeben – dafür sind genug Freischaltungen eingeplant.', 'You normally don\'t need to enter your licence code again. If the new app asks for it, just enter the code from your purchase email – there are enough activations for that.')}</div>
+    <a class="btn primary block" style="margin-top:14px" href="#" target="_blank" rel="noopener" data-mv-open>${T('Neue App öffnen', 'Open new app')}</a>
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn grow" data-mv-copy>${T('Link kopieren', 'Copy link')}</button><button class="btn grow" data-mv-close>${T('Später', 'Later')}</button></div>
+    <div class="small muted" style="margin-top:8px">${T('Die Anleitung findest du jederzeit wieder in den Einstellungen.', 'You can find this guide again in the settings.')}</div></div>`;
+  const a = bg.querySelector('[data-mv-open]'); a.href = moveURL();
+  a.addEventListener('click', () => { a.href = moveURL(); });
+  bg.addEventListener('click', async e => {
+    if (e.target.closest('[data-mv-copy]')) { try { await navigator.clipboard.writeText(moveURL()); toast(T('Link kopiert – in Safari bzw. Chrome einfügen und öffnen.', 'Link copied – paste it into Safari or Chrome.')); } catch (x) { toast(T('Kopieren nicht möglich – nutze „Neue App öffnen“.', 'Copy failed – use “Open new app”.')); } }
+    else if (e.target === bg || e.target.closest('[data-mv-close]')) bg.remove();
+  });
+  document.body.appendChild(bg);
+}
+// Nur für die Umzugszeit: automatisch einmal zeigen, bis einschließlich 5. Dezember 2026. Unter der neuen Adresse nie.
+const MOVE_UNTIL = '2026-12-05';
+if (OLD_HOST && IS_INSTALLED && todayKey() <= MOVE_UNTIL) {
+  const tryShow = (n) => setTimeout(() => { const H = lsGet('tt_hints') || {}; if (H.move) return; if (document.querySelector('.modal-bg,.lic-ov,#splash.on:not(.out)') && n < 20) return tryShow(n + 1); moveGuide(); }, n ? 1500 : 2500);
+  tryShow(0);
+}
+document.addEventListener('click', e => { if (!e.target.closest('[data-act="move-guide"]')) return; e.stopPropagation(); e.preventDefault(); moveGuide(); }, true);
 /* ================= Freunde & Gruppen (Datenbank von DolphinPage, siehe DATENBANK.md) ================= */
 // Eine Gruppe ist ein gemeinsamer Gruppen-Schlüssel (steht im Einladungslink hinter #join=). Daraus entstehen ein
 // Anmelde-Token, der gesendet wird, und ein Daten-Schlüssel, der das Gerät nie verlässt: DolphinPage speichert nur
@@ -3446,9 +3497,8 @@ function frRanking(key, members, metric) {
 function viewFriends() {
   const s = Fr.st(), T = frT;
   if (!Fr.host()) {
-    const alt = location.origin + location.pathname;
-    return `<div class="card fr-intro"><div class="fr-big">🏆</div><h2 style="margin:6px 0">${T('Mit Freunden messen', 'Compete with friends')}</h2><div class="t2 small" style="line-height:1.5">${T('Gruppen und Ranglisten gibt es unter der neuen Adresse <b>meintrainingstagebuch.com</b>. Öffne die App dort einmal – deine Trainingsdaten ziehen automatisch mit um.', 'Groups and leaderboards are available at the new address <b>meintrainingstagebuch.com</b>. Open the app there once – your data moves along automatically.')}</div>
-      <a class="btn primary block" style="margin-top:12px" href="${esc(alt)}" target="_blank" rel="noopener">${T('Neue Adresse öffnen', 'Open new address')}</a></div>`;
+    return `<div class="card fr-intro"><div class="fr-big">🏆</div><h2 style="margin:6px 0">${T('Mit Freunden messen', 'Compete with friends')}</h2><div class="t2 small" style="line-height:1.5">${T('Gruppen und Ranglisten gibt es unter der neuen Adresse <b>meintrainingstagebuch.com</b>. Lege die App dort einmal neu auf den Home-Bildschirm – deine Trainings und deine Lizenz ziehen automatisch mit.', 'Groups and leaderboards are available at the new address <b>meintrainingstagebuch.com</b>. Add the app to your home screen from there once – your workouts and licence move along automatically.')}</div>
+      <button class="btn primary block" style="margin-top:12px" data-act="move-guide">${T('So ziehst du um', 'How to move')}</button></div>`;
   }
   const privacy = `<div class="small muted" style="margin-top:10px;line-height:1.45">🔒 ${T('Geteilt werden nur Spitzname, Abzeichen, Anzahl Trainings, Serie und Bestwerte bei 8 Übungen – verschlüsselt, nur für deine Gruppen lesbar. Deine einzelnen Trainings bleiben auf deinem Handy.', 'Only your nickname, badges, workout counts, streak and bests on 8 exercises are shared – encrypted, readable only by your groups. Your individual workouts stay on your phone.')}</div>`;
   if (!s.nick) return `<div class="card fr-intro"><div class="fr-big">🏆</div><h2 style="margin:6px 0">${T('Mit Freunden messen', 'Compete with friends')}</h2>
