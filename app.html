@@ -3498,7 +3498,6 @@ async function frShare(key) {
   const url = 'https://' + FR_HOST + '/app.html#join=' + key;
   const text = T(`💪 Lass uns gegeneinander antreten! Ich tracke mein Training mit dem Trainingstagebuch. Tritt meiner Gruppe „${name}“ bei – dann vergleichen wir Abzeichen, Trainings und Bestwerte. 7 Tage gratis testen: ${url}`,
     `💪 Let's compete! I track my workouts with Trainingstagebuch. Join my group "${name}" and we'll compare badges, workouts and personal bests. Try it free for 7 days: ${url}`);
-  try { gcEvent('freunde-einladen'); } catch (e) {}
   if (navigator.share) { try { await navigator.share({ title: 'Trainingstagebuch', text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   try { await navigator.clipboard.writeText(text); toast(T('Einladung kopiert – füge sie in WhatsApp & Co. ein.', 'Invite copied – paste it into WhatsApp etc.')); }
   catch (e) { modal({ title: T('Einladung', 'Invite'), body: `<textarea class="f" readonly style="height:150px">${esc(text)}</textarea>`, cancel: '' }); }
@@ -3568,10 +3567,7 @@ window.addEventListener('online', () => { if (S.tab === 'friends') render(); Fr.
 { const _r = render; render = function () { _r(); const m = document.getElementById('main'), t = hintsHTML(); if (m && t) m.insertAdjacentHTML('afterbegin', t); try { checkBadges(); } catch (e) {} try { Fr.schedule(); } catch (e) {} }; }
 document.addEventListener('click', e => { const o = e.target.closest('[data-os]'); if (!o) return; const H = lsGet('tt_hints') || {}; H.os = o.dataset.os; lsSet('tt_hints', H); render(); });
 document.addEventListener('click', e => { const b = e.target.closest('[data-hint]'); if (!b) return; const H = lsGet('tt_hints') || {}; H[b.dataset.hint] = Date.now(); lsSet('tt_hints', H); render(); });
-// Cookiefreie Besucherzählung (GoatCounter) – nur auf der echten Seite, nicht in Vorschau/Tests
-const GC_URL = 'https://trainingstagebuch.goatcounter.com/count';
-(function () { if (!/github\.io$|meintrainingstagebuch\.com$/.test(location.hostname)) return; const sc = document.createElement('script'); sc.async = true; sc.src = 'https://gc.zgo.at/count.js'; sc.dataset.goatcounter = GC_URL; document.head.appendChild(sc); })();
-function gcEvent(name) { try { if (window.goatcounter && goatcounter.count) goatcounter.count({ path: name, title: name, event: true }); } catch (e) {} }
+function gcEvent() {} // Besucherzählung übernimmt DolphinPage
 /* ================= Verkauf: Testphase + Lizenz (Polar) ================= */
 // >>> Diese Werte aus dem Polar-Dashboard eintragen <<<
 const LIC_CFG = {
